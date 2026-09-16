@@ -1,0 +1,84 @@
+########################################################################################################################
+# AUTOSAR Renesas R4.8.0 ICU Driver Generation Tool for X2x                   
+# Run time      = [10 Jul 2026 - 18:49:38]
+#    Command line arguments = U2B24-E.arxml
+#	..\X2x\modules\icu\generator\U2B24-E\R2211_icu_U2B24-E_BSWMDT.arxml
+#	..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_icu.arxml
+#	..\X2x\common\generic\stubs\22_11\EcuM\xml\EcuM_icu.arxml
+#	..\X2x\common\generic\stubs\22_11\Os\xml\Os_icu.arxml
+#	..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_icu.arxml
+#
+# Copyright(c) 2023, 2024 Renesas Electronics Corporation. All rights reserved.
+########################################################################################################################
+
+INF000001: Tool Version: MCALConfGen.exe version: 2.3.0, IcuU2Bx-E.dll 
+           version: 2.4.1 
+INF000002: Command line arguments: MCALConfGen.exe -m icu -o icu_output  
+           U2B24-E.arxml Translation.trxml  
+           ..\X2x\modules\icu\generator\U2B24-E\R2211_icu_U2B24-E_BSWMDT.arxml  
+           ..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_icu.arxml  
+           ..\X2x\common\generic\stubs\22_11\EcuM\xml\EcuM_icu.arxml  
+           ..\X2x\common\generic\stubs\22_11\Os\xml\Os_icu.arxml 
+           ..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_icu.arxml 
+WRN122002: When value of parameter 'IcuMeasurementMode' is configured as  
+           <ICU_MODE_SIGNAL_EDGE_DETECT> and the parameter  
+           'IcuSignalNotification' of same 'IcuChannel' is not configured  
+           or configured as <NULL/NULL_PTR/Empty>, the value of parameter  
+           'IcuSignalNotification' shall be considered as <NULL_PTR>.  
+           File Name:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml 
+           Path: /ActiveEcuC/Icu/IcuConfigSet/IcuChannel_TIM00 
+INF122002: The parameter "IcuMultiCoreSupport" in the container  
+           "IcuGeneral" is <disabled>. Setting in the parameter  
+           <IcuKernelEcucPartitionRef> in the container <IcuGeneral> will  
+           be ignored. File name:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml. 
+           Path: /ActiveEcuC/Icu/IcuGeneral. 
+INF122002: The parameter "IcuMultiCoreSupport" in the container  
+           "IcuGeneral" is <disabled>. Setting in the parameter  
+           <IcuEcucPartitionRef> in the container <IcuGeneral> will be  
+           ignored. File name:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml. 
+           Path: /ActiveEcuC/Icu/IcuGeneral. 
+WRN122007: Since the parameter 'IcuInterruptConsistencyCheck' is configured  
+           as 'False', the configuration of the parameter  
+           'ICU_E_INT_INCONSISTENT' in the container  
+           'IcuDemEventParameterRefs' is redundant and will not be used  
+           for the generation of this variant. File name:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml 
+           Path: /ActiveEcuC/Icu/IcuDemEventParameterRefs 
+WRN122007: Since the parameter 'IcuMeasurementMode' is configured as  
+           'ICU_MODE_SIGNAL_EDGE_DETECT', the configuration of the  
+           parameter 'IcuGtmTbuTimeStampFreeRunningCounter' in the  
+           container 'IcuGtmTimChannelExtraSetting' is redundant and will  
+           not be used for the generation of this variant. File name:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml  
+           Path: 
+           /ActiveEcuC/Icu/IcuConfigSet/IcuChannel_TIM00/IcuGtmTimChannelExtraSetting 
+WRN122007: Since the parameter 'IcuSignalNotification' is configured as  
+           '<Empty/Not configured/NULL/NULL_PTR>', the configuration of  
+           the parameter 'IcuGtmTimChannelInterruptSelect' in the  
+           container 'IcuGtmTimChannelExtraSetting' is redundant and will  
+           not be used for the generation of this variant. File name:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml  
+           Path: 
+           /ActiveEcuC/Icu/IcuConfigSet/IcuChannel_TIM00/IcuGtmTimChannelExtraSetting 
+WRN122007: Since the parameter 'IcuGtmTimEnableFilter' is configured as  
+           'False', the configuration of the parameter  
+           'IcuGtmTimFilterModeFallingEdge/IcuGtmTimFilterModeRisingEdge/IcuGtmTimFilterParameterFallingEdge/IcuGtmTimFilterParameterRisingEdge/IcuGtmTimFilterClkSrc'  
+           in the container 'IcuGtmTimChannelExtraSetting' is redundant  
+           and will not be used for the generation of this variant. File  
+           name:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml  
+           Path: 
+           /ActiveEcuC/Icu/IcuConfigSet/IcuChannel_TIM00/IcuGtmTimChannelExtraSetting 
+INF000004: Opened file <icu_output\include\Icu_Externals.h> at [10 Jul 2026 
+           - 18:49:38]. 
+INF000004: Opened file <icu_output\include\Icu_Cfg.h> at [10 Jul 2026 - 
+           18:49:38]. 
+INF000004: Opened file <icu_output\src\Icu_PBCfg.c> at [10 Jul 2026 - 
+           18:49:38]. 
+INF000004: Opened file <icu_output\Icu.log> at [10 Jul 2026 - 18:49:38]. 
+INF000005: <0> Error(s) and <5> Warning(s) detected. 
+INF000007: Execution completed successfully with warnings. 
+

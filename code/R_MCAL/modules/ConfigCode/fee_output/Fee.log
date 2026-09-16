@@ -1,0 +1,16 @@
+########################################################################################################################
+# AUTOSAR Renesas R FEE Driver Generation Tool for X2x                   
+# Run time      = [07 Jul 2026 - 17:47:30]
+#    Command line arguments = U2B24-E.arxml
+#	..\X2x\modules\fee\generator\U2B24-E\R2211_fee_U2B24-E_BSWMDT.arxml
+#
+# Copyright(c) 2023, 2024 Renesas Electronics Corporation. All rights reserved.
+########################################################################################################################
+
+ERR021003: MEMACC Driver Component, MEM Driver Component are not present in  
+           the input file(s) or not provided in <STUBS> tag of 
+           configuration XML file. 
+INF000004: Opened file <fee_output\Fee.log> at [07 Jul 2026 - 17:47:30]. 
+INF000005: <1> Error(s) and <0> Warning(s) detected. 
+INF000009: Execution terminated due to error in the input file. 
+

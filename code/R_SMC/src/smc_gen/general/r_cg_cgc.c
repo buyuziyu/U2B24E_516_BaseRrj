@@ -1,0 +1,377 @@
+/***********************************************************************************************************************
+* DISCLAIMER
+* This software is supplied by Renesas Electronics Corporation and is only intended for use with Renesas products.
+* No other uses are authorized. This software is owned by Renesas Electronics Corporation and is protected under all
+* applicable laws, including copyright laws.
+* THIS SOFTWARE IS PROVIDED "AS IS" AND RENESAS MAKES NO WARRANTIES REGARDING THIS SOFTWARE, WHETHER EXPRESS, IMPLIED
+* OR STATUTORY, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+* NON-INFRINGEMENT.  ALL SUCH WARRANTIES ARE EXPRESSLY DISCLAIMED.TO THE MAXIMUM EXTENT PERMITTED NOT PROHIBITED BY
+* LAW, NEITHER RENESAS ELECTRONICS CORPORATION NOR ANY OF ITS AFFILIATED COMPANIES SHALL BE LIABLE FOR ANY DIRECT,
+* INDIRECT, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES FOR ANY REASON RELATED TO THIS SOFTWARE, EVEN IF RENESAS OR
+* ITS AFFILIATES HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+* Renesas reserves the right, without notice, to make changes to this software and to discontinue the availability
+* of this software. By using this software, you agree to the additional terms and conditions found by accessing the
+* following link:
+* http://www.renesas.com/disclaimer
+*
+* Copyright (C) 2018, 2025 Renesas Electronics Corporation. All rights reserved.
+***********************************************************************************************************************/
+
+/***********************************************************************************************************************
+* File Name        : r_cg_cgc.c
+* Version          : 1.8.0
+* Device(s)        : R7F7025Bx
+* Description      : This file contains clock setting according to Clocks tabs setting.
+***********************************************************************************************************************/
+/***********************************************************************************************************************
+Pragma directive
+***********************************************************************************************************************/
+/* Start user code for pragma. Do not edit comment generated here */
+/* End user code. Do not edit comment generated here */
+
+/***********************************************************************************************************************
+Includes
+***********************************************************************************************************************/
+#include "r_cg_macrodriver.h"
+#include "r_cg_userdefine.h"
+#include "r_cg_cgc.h"
+/* Start user code for include. Do not edit comment generated here */
+/* End user code. Do not edit comment generated here */
+
+/***********************************************************************************************************************
+Global variables and functions
+***********************************************************************************************************************/
+volatile uint32_t g_cg_sync_read;
+/* Start user code for global. Do not edit comment generated here */
+/* End user code. Do not edit comment generated here */
+
+/***********************************************************************************************************************
+* Function Name: R_CGC_Create
+* Description  : This function initializes the CLOCK.
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+void R_CGC_Create(void)
+{
+    uint8_t i;
+
+    /* HS IntOSC setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.HSOSCSTPM.UINT32 = _CGC_HSOSC_REQUEST_STOP;
+    while (_CGC_HSOSC_ACTIVE != (SYSCTRL.HSOSCS.UINT32 & _CGC_HSOSC_ACTIVE))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* MainOSC setting */
+    /* Please set source code at option byte */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.MOSCSTPM.UINT32 = _CGC_MAINOSC_REQUEST_STOP;
+    SYSCTRL.MOSCE.UINT32 = _CGC_MAINOSC_START;
+    while (_CGC_MAINOSC_ACTIVE != (SYSCTRL.MOSCS.UINT32 & _CGC_MAINOSC_ACTIVE))
+    {
+        NOP();
+    }
+    for (i = 0U; (i < 4U) && (1U == SYSCTRL.MOSCS.BIT.MOSCSTAB); i++ )
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* PLL/SSCG/SSCG1 setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.PLLSTPM.UINT32 = _CGC_PLL_REQUEST_STOP;
+    SYSCTRL.SSCGC.UINT32 = _CGC_SSCG_MODULATION_DISABLE;
+    SYSCTRL.SSCG1C.UINT32 = _CGC_SSCG_MODULATION_DISABLE;
+    SYSCTRL.PLLE.UINT32 = _CGC_PLL_SSCG_SSCG1_START;
+    while (_CGC_PLL_SSCG_SSCG1_ACTIVE != (SYSCTRL.PLLS.UINT32 & _CGC_PLL_SSCG_SSCG1_ACTIVE))
+    {
+        NOP();
+    }
+    for (i = 0U; (i < 4U) && (1U == SYSCTRL.PLLS.BIT.PLLCLKSTAB); i++ )
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLK_SYS_CLEAN clock setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKD_PLLC.UINT32 = _CGC_CLK_PLLO_DIVISION_6_16;
+    while (_CGC_CLK_PLLO_DIVIDER_SYNC != (SYSCTRL.CKD_PLLS.UINT32 & _CGC_CLK_PLLO_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKS_CLEANC.UINT32 = _CGC_SYS_CLEAN_SOURCE_CLKPLLO;
+    while (_CGC_SYS_CLEAN_CLKPLLO_ACTIVE != (SYSCTRL.CKS_CLEANS.UINT32 & _CGC_SYS_CLEAN_CLKIOSC_ACTIVE))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_PLLC.UINT32 = _CGC_CLK_PLLO_DIVISION_8_16;
+    while (_CGC_CLK_PLLO_DIVIDER_SYNC != (SYSCTRL.CKD_PLLS.UINT32 & _CGC_CLK_PLLO_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_PLLC.UINT32 = _CGC_CLK_PLLO_DIVISION_10_16;
+    while (_CGC_CLK_PLLO_DIVIDER_SYNC != (SYSCTRL.CKD_PLLS.UINT32 & _CGC_CLK_PLLO_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_PLLC.UINT32 = _CGC_CLK_PLLO_DIVISION_12_16;
+    while (_CGC_CLK_PLLO_DIVIDER_SYNC != (SYSCTRL.CKD_PLLS.UINT32 & _CGC_CLK_PLLO_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_PLLC.UINT32 = _CGC_CLK_PLLO_DIVISION_14_16;
+    while (_CGC_CLK_PLLO_DIVIDER_SYNC != (SYSCTRL.CKD_PLLS.UINT32 & _CGC_CLK_PLLO_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_PLLC.UINT32 = _CGC_CLK_PLLO_DIVISION_NO;
+    while (_CGC_CLK_PLLO_DIVIDER_SYNC != (SYSCTRL.CKD_PLLS.UINT32 & _CGC_CLK_PLLO_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLK_SYS_SSCG clock setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKD_SSCGC.UINT32 = _CGC_CLK_SSCGO_DIVISION_6_16;
+    while (_CGC_CLK_SSCGO_DIVIDER_SYNC != (SYSCTRL.CKD_SSCGS.UINT32 & _CGC_CLK_SSCGO_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKS_SSCGC.UINT32 = _CGC_SYS_SSCG_SOURCE_CLKSSCGO;
+    while (_CGC_SYS_SSCG_CLKSSCGO_ACTIVE != (SYSCTRL.CKS_SSCGS.UINT32 & _CGC_SYS_SSCG_CLKSSCGO_ACTIVE))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_SSCGC.UINT32 = _CGC_CLK_SSCGO_DIVISION_8_16;
+    while (_CGC_CLK_SSCGO_DIVIDER_SYNC != (SYSCTRL.CKD_SSCGS.UINT32 & _CGC_CLK_SSCGO_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_SSCGC.UINT32 = _CGC_CLK_SSCGO_DIVISION_10_16;
+    while (_CGC_CLK_SSCGO_DIVIDER_SYNC != (SYSCTRL.CKD_SSCGS.UINT32 & _CGC_CLK_SSCGO_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_SSCGC.UINT32 = _CGC_CLK_SSCGO_DIVISION_12_16;
+    while (_CGC_CLK_SSCGO_DIVIDER_SYNC != (SYSCTRL.CKD_SSCGS.UINT32 & _CGC_CLK_SSCGO_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_SSCGC.UINT32 = _CGC_CLK_SSCGO_DIVISION_14_16;
+    while (_CGC_CLK_SSCGO_DIVIDER_SYNC != (SYSCTRL.CKD_SSCGS.UINT32 & _CGC_CLK_SSCGO_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_SSCGC.UINT32 = _CGC_CLK_SSCGO_DIVISION_NO;
+    while (_CGC_CLK_SSCGO_DIVIDER_SYNC != (SYSCTRL.CKD_SSCGS.UINT32 & _CGC_CLK_SSCGO_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLK_SYS_SSCG1 clock setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKD_SSCG1C.UINT32 = _CGC_CLK_SSCG1O_DIVISION_6_16;
+    while (_CGC_CLK_SSCG1O_DIVIDER_SYNC != (SYSCTRL.CKD_SSCG1S.UINT32 & _CGC_CLK_SSCG1O_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKS_SSCG1C.UINT32 = _CGC_SYS_SSCG1_SOURCE_CLKSSCG1O;
+    while (_CGC_SYS_SSCG1_CLKSSCG1O_ACTIVE != (SYSCTRL.CKS_SSCG1S.UINT32 & _CGC_SYS_SSCG1_CLKSSCG1O_ACTIVE))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_SSCG1C.UINT32 = _CGC_CLK_SSCG1O_DIVISION_8_16;
+    while (_CGC_CLK_SSCG1O_DIVIDER_SYNC != (SYSCTRL.CKD_SSCG1S.UINT32 & _CGC_CLK_SSCG1O_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_SSCG1C.UINT32 = _CGC_CLK_SSCG1O_DIVISION_10_16;
+    while (_CGC_CLK_SSCG1O_DIVIDER_SYNC != (SYSCTRL.CKD_SSCG1S.UINT32 & _CGC_CLK_SSCG1O_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_SSCG1C.UINT32 = _CGC_CLK_SSCG1O_DIVISION_12_16;
+    while (_CGC_CLK_SSCG1O_DIVIDER_SYNC != (SYSCTRL.CKD_SSCG1S.UINT32 & _CGC_CLK_SSCG1O_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_SSCG1C.UINT32 = _CGC_CLK_SSCG1O_DIVISION_14_16;
+    while (_CGC_CLK_SSCG1O_DIVIDER_SYNC != (SYSCTRL.CKD_SSCG1S.UINT32 & _CGC_CLK_SSCG1O_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_SSCG1C.UINT32 = _CGC_CLK_SSCG1O_DIVISION_NO;
+    while (_CGC_CLK_SSCG1O_DIVIDER_SYNC != (SYSCTRL.CKD_SSCG1S.UINT32 & _CGC_CLK_SSCG1O_DIVIDER_SYNC))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLK_RLIN3 divider setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_RLINC.UINT32 |= _CGC_CLK_RLIN3_SOURCE_CLKMOSC_4;
+    while (_CGC_CLK_RLIN3_CLKMOSC_4_ACTIVE != (SYSCTRL.CKS_RLINS.UINT32 & (~_CGC_CLK_RLIN3_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLK_RLIN3_CH23 divider setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_RLINC.UINT32 |= _CGC_CLK_RLIN3CH23_SOURCE_CLKMOSC_4;
+    while (_CGC_CLK_RLIN3CH23_CLKMOSC_4_ACTIVE != (SYSCTRL.CKS_RLINS.UINT32 & (~_CGC_CLK_RLIN3CH23_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLK_MSPI selector setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_MSPIC.UINT32 = _CGC_CLK_MSPI_SOURCE_CLKCHSB;
+    while (_CGC_CLK_MSPI_CLKCHSB_ACTIVE != (SYSCTRL.CKS_MSPIS.UINT32 & (~_CGC_CLK_MSPI_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLKA_WDTBA selector setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_AWDTC.UINT32 = _CGC_CLKA_WDTBA_SOURCE_CLKLSIOSC_128;
+    while (_CGC_CLKA_WDTBA_CLKLSIOSC_128_ACTIVE != (SYSCTRL.CKS_AWDTS.UINT32 & _CGC_CLKA_WDTBA_CLKLSIOSC_128_ACTIVE))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLKA_TAUJ selector setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_ATAUJC.UINT32 = _CGC_CLKA_TAUJ_SOURCE_CLKCHSB;
+    while (_CGC_CLKA_TAUJ_CLKCHSB_ACTIVE != (SYSCTRL.CKS_ATAUJS.UINT32 & (~_CGC_CLKA_TAUJ_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLKA_RTCA selector setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_ARTCAC.UINT32 = _CGC_CLKA_RTCA_SOURCE_CLKLSIOSC;
+    while (_CGC_CLKA_RTCA_CLKLSIOSC_ACTIVE != (SYSCTRL.CKS_ARTCAS.UINT32 & (~_CGC_CLKA_RTCA_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* EXTCLK0 selector and divider setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_EXTCLK0C.UINT32 = _CGC_EXTCLK0_SOURCE_CLKHSIOSC_20;
+    while (_CGC_EXTCLK0_CLKHSIOSC_20_ACTIVE != (SYSCTRL.CKS_EXTCLK0S.UINT32 & (~_CGC_EXTCLK0_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_EXTCLK0C.UINT32 = _CGC_EXTCLK0_DIVISION_RATIO;
+    while ((_CGC_EXTCLK0_DIVIDER_STABLE | _CGC_EXTCLK0_OUTPUT_ONGOING) != SYSCTRL.CKD_EXTCLK0S.UINT32)
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* EXTCLK1 selector and divider setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_EXTCLK1C.UINT32 = _CGC_EXTCLK1_SOURCE_CLKHSIOSC_20;
+    while (_CGC_EXTCLK1_CLKHSIOSC_20_ACTIVE != (SYSCTRL.CKS_EXTCLK1S.UINT32 & (~_CGC_EXTCLK1_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CKD_EXTCLK1C.UINT32 = _CGC_EXTCLK1_DIVISION_RATIO;
+    while ((_CGC_EXTCLK1_DIVIDER_STABLE | _CGC_EXTCLK1_OUTPUT_ONGOING) != SYSCTRL.CKD_EXTCLK1S.UINT32)
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLK_WDTB / CLK_WDT_ICUM selector setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_WDTC.UINT32 = _CGC_CLK_WDTB_SOURCE_HSIOSC_640;
+    while (_CGC_CLK_WDTB_HSIOSC_640_ACTIVE != (SYSCTRL.CKS_WDTS.UINT32 & (~_CGC_CLK_WDTB_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLK_SWDT selector setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_SWDTC.UINT32 = _CGC_CLK_SWDT_SOURCE_HSIOSC_20;
+    while (_CGC_CLK_SWDT_HSIOSC_20_ACTIVE != (SYSCTRL.CKS_SWDTS.UINT32 & (~_CGC_CLK_SWDT_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLK_CANDF_C selector setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_RCANC.UINT32 |= _CGC_CLK_CANFD_C_SOURCE_CLKCHSB;
+    while (_CGC_CLK_CANFD_C_CLKCHSB_ACTIVE != (SYSCTRL.CKS_RCANS.UINT32 & (~_CGC_CLK_CANFD_C_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLK_CANDF_XIN selector setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_RCANC.UINT32 |= _CGC_CLK_CANFD_XIN_SOURCE_CLKMOSC;
+    while (_CGC_CLK_CANFD_XIN_CLKMOSC_ACTIVE != (SYSCTRL.CKS_RCANS.UINT32 & (~_CGC_CLK_CANFD_XIN_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLKC_CANXL_CH0 selector setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_CANXL0C.UINT32 = _CGC_CLKC_CANXL_CHN_SOURCE_CLKCHSB;
+    while (_CGC_CLKC_CANXL_CHN_CLKCHSB_ACTIVE != (SYSCTRL.CKS_CANXL0S.UINT32 & (~_CGC_CLKC_CANXL_CHN_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLKC_CANXL_CH1 selector setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_CANXL1C.UINT32 = _CGC_CLKC_CANXL_CHN_SOURCE_CLKEMG;
+    while (_CGC_CLKC_CANXL_CHN_CLKEMG_ACTIVE != (SYSCTRL.CKS_CANXL1S.UINT32 & (~_CGC_CLKC_CANXL_CHN_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLK_OSPI selector setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_OSPIC.UINT32 |= _CGC_CLK_OSPI_SOURCE_CLKEMG;
+    while (_CGC_CLK_OSPI_CLKEMG_ACTIVE != (SYSCTRL.CKS_OSPIC.UINT32 & (~_CGC_CLK_OSPI_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* CLK_OSPIX2 selector setting */
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_ENABLE;
+    SYSCTRL.CKS_OSPIC.UINT32 |= _CGC_CLK_OSPIX2_SOURCE_CLKEMG;
+    while (_CGC_CLK_OSPIX2_CLKEMG_ACTIVE != (SYSCTRL.CKS_OSPIC.UINT32 & (~_CGC_CLK_OSPIX2_STATUS_DEFAULT)))
+    {
+        NOP();
+    }
+    SYSCTRL.CLKKCPROT1.UINT32 = _WRITE_PROTECT_DISABLE;
+    /* Synchronization processing */
+    g_cg_sync_read = SYSCTRL.CKS_WDTC.UINT32;
+    __syncp();
+
+    /* Set EXTCLK0O pin */
+    PORT0.PKCPROT.UINT32 = _WRITE_PROTECT_ENABLE;
+    PORT0.PWE.UINT32 = SETBIT(9U);
+    PORT0.PCR15_5.UINT32 = (PORT0.PCR15_5.UINT32 & _PCR_DEFAULT_VALUE) | _PCR_SET_PM;
+    PORT0.PCR15_5.UINT32 |= _PCR_ALT_OUT1;
+    PORT0.PCR15_5.UINT32 |= _PCR_SET_PMC;
+    PORT0.PCR15_5.UINT32 &= _PCR_CLEAR_PM;
+    PORT0.PCR15_5.UINT32 &= _PCR_ALT_OUT_SETTING;
+    PORT0.PWE.UINT32 = _PORT_WRITE_PROTECT_DISABLE;
+    PORT0.PKCPROT.UINT32 = _WRITE_PROTECT_DISABLE;
+
+    /* Set EXTCLK1O pin */
+    PORT0.PKCPROT.UINT32 = _WRITE_PROTECT_ENABLE;
+    PORT0.PWE.UINT32 = SETBIT(9U);
+    PORT0.PCR15_8.UINT32 = (PORT0.PCR15_8.UINT32 & _PCR_DEFAULT_VALUE) | _PCR_SET_PM;
+    PORT0.PCR15_8.UINT32 |= _PCR_ALT_OUT2;
+    PORT0.PCR15_8.UINT32 |= _PCR_SET_PMC;
+    PORT0.PCR15_8.UINT32 &= _PCR_CLEAR_PM;
+    PORT0.PCR15_8.UINT32 &= _PCR_ALT_OUT_SETTING;
+    PORT0.PWE.UINT32 = _PORT_WRITE_PROTECT_DISABLE;
+    PORT0.PKCPROT.UINT32 = _WRITE_PROTECT_DISABLE;
+
+    R_CGC_Create_UserInit();
+}
+
+/* Start user code for adding. Do not edit comment generated here */
+/* End user code. Do not edit comment generated here */

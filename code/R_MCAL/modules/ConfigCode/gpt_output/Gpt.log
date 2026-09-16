@@ -1,0 +1,75 @@
+########################################################################################################################
+# AUTOSAR Renesas R4.8.0 GPT Driver Generation Tool for X2x                   
+# Run time      = [13 Jul 2026 - 15:38:56]
+#    Command line arguments = U2B24-E.arxml
+#	..\X2x\modules\gpt\generator\U2B24-E\R2211_gpt_U2B24-E_BSWMDT.arxml
+#	..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_gpt.arxml
+#	..\X2x\common\generic\stubs\22_11\EcuM\xml\EcuM_gpt.arxml
+#	..\X2x\common\generic\stubs\22_11\Os\xml\Os_gpt.arxml
+#	..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_gpt.arxml
+#
+# Copyright(c) 2023, 2024 Renesas Electronics Corporation. All rights reserved.
+########################################################################################################################
+
+INF000001: Tool Version: MCALConfGen.exe version: 2.3.0, GptU2Bx-E.dll 
+           version: 2.4.1 
+INF000002: Command line arguments: MCALConfGen.exe -m gpt -o gpt_output  
+           U2B24-E.arxml Translation.trxml  
+           ..\X2x\modules\gpt\generator\U2B24-E\R2211_gpt_U2B24-E_BSWMDT.arxml  
+           ..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_gpt.arxml  
+           ..\X2x\common\generic\stubs\22_11\EcuM\xml\EcuM_gpt.arxml  
+           ..\X2x\common\generic\stubs\22_11\Os\xml\Os_gpt.arxml 
+           ..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_gpt.arxml 
+INF100015: The reference value of 'GptEcucPartitionRef' parameter in  
+           GptDriverConfiguration container is ignored because  
+           'GptMultiCoreSupport' parameter is configured as <false>. File  
+           name: U2B24-E.arxml Path: 
+           /ActiveEcuC/Gpt/GptDriverConfiguration 
+INF100015: The reference value of 'GptChannelEcucPartitionRef' parameter in  
+           GPT_OSTM0 container is ignored because 'GptMultiCoreSupport'  
+           parameter is configured as <false>. File name: U2B24-E.arxml 
+           Path: /ActiveEcuC/Gpt/GptChannelConfigSet/GPT_OSTM0 
+INF100015: The reference value of 'GptKernelEcucPartitionRef' parameter in  
+           GptDriverConfiguration container is ignored because  
+           'GptMultiCoreSupport' parameter is configured as <false>. File  
+           name: U2B24-E.arxml Path: 
+           /ActiveEcuC/Gpt/GptDriverConfiguration 
+INF100016: Value of parameter GptPeNumber in container  
+           'GptDriverConfiguration' is ignored because none of channel  
+           with type INTC1 is configured. INTC1 channels include:  
+           TAUD0I0, TAUD0I2, TAUD0I4, TAUD0I6, TAUD0I8, TAUD0I10, 
+           TAUD0I12, TAUD0I14. 
+WRN100015: The configured value of parameter 'GPT_E_INT_INCONSISTENT' in  
+           'GptDemEventParameterRefs' container is ignored, Because the  
+           parameter 'GptInterruptConsistencyCheck' in container  
+           'GptDriverConfiguration' is configured as <false>. File name: 
+           U2B24-E.arxml Path: /ActiveEcuC/Gpt/GptDemEventParameterRefs 
+INF100003: In 'GptTaujClockReferencePoint', the reference clock of  
+           'GptTauj23ClockReference' parameter will be used. The  
+           configured value of 'GptTauj23ClockImmediateValue' parameter  
+           will not be used. Because the parameter  
+           'GptEnableTauj23ClockImmediateValue' is configured to <false>.  
+           File name: U2B24-E.arxml Path: 
+           /ActiveEcuC/Gpt/GptDriverConfiguration/GptTaujClockReferencePoint 
+INF100003: In 'GptTaudClockReferencePoint', the reference clock of  
+           'GptTaudClockReference' parameter will be used. The configured  
+           value of 'GptTaudClockImmediateValue' parameter will not be  
+           used. Because the parameter 'GptEnableTaudClockImmediateValue'  
+           is configured to <false>. File name: U2B24-E.arxml Path: 
+           /ActiveEcuC/Gpt/GptDriverConfiguration/GptTaudClockReferencePoint 
+INF100003: In 'GptOstmClockReferencePoint', the reference clock of  
+           'GptOstmClockReference' parameter will be used. The configured  
+           value of 'GptOstmClockImmediateValue' parameter will not be  
+           used. Because the parameter 'GptEnableOstmClockImmediateValue'  
+           is configured to <false>. File name: U2B24-E.arxml Path: 
+           /ActiveEcuC/Gpt/GptDriverConfiguration/GptOstmClockReferencePoint 
+INF000004: Opened file <gpt_output\include\Gpt_Cbk.h> at [13 Jul 2026 - 
+           15:38:56]. 
+INF000004: Opened file <gpt_output\include\Gpt_Cfg.h> at [13 Jul 2026 - 
+           15:38:56]. 
+INF000004: Opened file <gpt_output\src\Gpt_PBcfg.c> at [13 Jul 2026 - 
+           15:38:56]. 
+INF000004: Opened file <gpt_output\Gpt.log> at [13 Jul 2026 - 15:38:56]. 
+INF000005: <0> Error(s) and <1> Warning(s) detected. 
+INF000007: Execution completed successfully with warnings. 
+

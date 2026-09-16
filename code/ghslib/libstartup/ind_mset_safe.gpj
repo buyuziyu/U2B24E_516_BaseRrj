@@ -1,0 +1,10 @@
+#!gbuild
+[Subproject]
+	-D__GHS_SAFE_ALTERNATE_COMPILE
+	-Ospeed
+	-Onounroll
+	# Stores guaranteed to move across cache-lines
+	{optional} -no_arm64_errata_1183550
+{isdefined(SAFE_MEM_FUNCS)} ind_mset.c
+	-o ind_mset_safe
+	:appendExtension

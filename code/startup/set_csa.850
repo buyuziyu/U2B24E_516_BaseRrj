@@ -1,0 +1,75 @@
+/*1. Modify the Option Byte you want to modify in the "set_csa.850" file and save*/
+/*2. Compile the project and connect the target*/
+/*3. Enter "target FLASHEXTRA config1 on" in the 850eserv2 console*/
+/*4. Enter "target FLASHEXTRA" to check whether to enable access to the Option Byte area (optional)*/
+/*5. Click Download to download the program, and the option Byte flashing has been completed after downloading*/
+
+------------------------------------------------------------------------------
+--    set Configuration Setting Area (Option Bytes, Reset Vector)
+------------------------------------------------------------------------------
+    .section "CSA_SECTION", const
+    .align    4
+    .dw    0x00000000            -- Reset Vector (PE0)         Reset : 0x00000000
+    .dw    0x00000000            -- Reset Vector (PE1)         Reset : 0x00000000 
+    .dw    0x00000000            -- Reset Vector (PE2)         Reset : 0x00000000
+    .dw    0x00000000            -- Reset Vector (PE3)         Reset : 0x00000000
+    .dw    0x00000000            -- Reset Vector (PE4)         Reset : 0x00000000
+    .dw    0x00000000            -- Reset Vector (PE5)         Reset : 0x00000000
+    .dw    0x00000000            -- Reset Vector (PE6)         Reset : 0x00000000
+    .dw    0x00000000            -- Reset Vector (PE7)         Reset : 0x00000000
+    .dw    0x3FF30010            -- Option byte  0 (OPBT0)     Reset : 0x3FE30010
+    .dw    0x007B0000            -- Option byte  1 (OPBT1)     Reset : 0x007B0000
+    .dw    0xFFFFFFFF            -- Option byte  2 (OPBT2)     Reset : 0xFFFFFFFF
+    .dw    0x81FFFEFC            -- Option byte  3 (OPBT3)     Reset : 0x81FF7EFE  [Performance:0x81FFFEFC  Safty:0xA1FFFEFC]
+    .dw    0x0C0C0C0B            -- Option byte  4 (OPBT4)     Reset : 0x0C0C0C0B
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFF3FCF            -- Option byte  6 (OPBT6)     Reset : 0xFFFF3FCF
+    .dw    0xFFFFFFFF            -- Option byte  7 (OPBT7)     Reset : 0xFFFFFFFF
+    .dw    0xB07007FF            -- Option byte  8 (OPBT8)     Reset : 0xF07FFFFF  Changed
+    .dw    0xF9B0007F            -- Option byte  9 (OPBT9)     Reset : 0xF9B03F7F  [Performance:0xF9B0007F  Safty:0xFDA0007F]
+    .dw    0xF9FD288E            -- Option byte 10 (OPBT10)    Reset : 0xF9FD288E
+    .dw    0xEFFFFFFF            -- Option byte 11 (OPBT11)    Reset : 0xEFFFFFFF
+    .dw    0xFFFFFFFD            -- Option byte 12 (OPBT12)    Reset : 0xFFFFFFFD  [Single map:0xFFFFFFFD   Double map:0xFFFFFFFC]
+    .dw    0xFFFFFFFF            -- Option byte 13 (OPBT13)    Reset : 0xFFFFFFFF
+    .dw    0xFDBC8994            -- Option byte 14 (OPBT14)    Reset : 0xFDBC8994
+    .dw    0xFDBC8F94            -- Option byte 15 (OPBT15)    Reset : 0xFDBC8F94
+    .dw    0x74FFFF10            -- Option byte 16 (OPBT16)    Reset : 0x74FFFF10
+    .dw    0xF9AAFCFC            -- Option byte 17 (OPBT17)    Reset : 0xF9AAFCFC
+    .dw    0xC26BC1CE            -- Option byte 18 (OPBT18)    Reset : 0xC26BC1CE
+    .dw    0xFFFFC203            -- Option byte 19 (OPBT19)    Reset : 0xFFFFC203
+    .dw    0xCB88FFEF            -- Option byte 20 (OPBT20)    Reset : 0xCB88FFEF
+    .dw    0x065503CF            -- Option byte 21 (OPBT21)    Reset : 0x065503CF
+    .dw    0xFD94FE31            -- Option byte 22 (OPBT22)    Reset : 0xFD94FE31
+    .dw    0xFFFFFDFC            -- Option byte 23 (OPBT23)    Reset : 0xFFFFFDFC
+    .dw    0xFFFFF9B0            -- Option byte 24 (OPBT24)    Reset : 0xFFFFFFFC  [REDUN OPBT9][Performance:0xFFFFF9B0  Safty:0xFFFFFDA0]
+    .dw    0xFFC0F3FF            -- Option byte 25 (OPBT25)    Reset : 0xFFC0F3FF
+    .dw    0xFFFF0010            -- Option byte 26 (OPBT26)    Reset : 0xFFFF0010
+    .dw    0xFFFF0000            -- Option byte 27 (OPBT27)    Reset : 0xFFFF0000
+    .dw    0xFFFFFFFF            -- Option byte 28 (OPBT28)    Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0x8104C9FF            -- Option byte 36 (OPBT36)    Reset : 0x8184C9FF  [REDUN OPBT3][Performance:0x8104C9FF  Safty:0xA104C9FF]
+    .dw    0x02EFFF55            -- Option byte 37 (OPBT37)    Reset : 0x02EFFF55
+    .dw    0x00000000            -- Reserved                   Reset : 0x00000000
+    .dw    0x00000000            -- Reserved                   Reset : 0x00000000
+    .dw    0xFF00FCFF            -- Option byte 40 (OPBT40)    Reset : 0xFF00FCFF
+    .dw    0xFFFFFFFF            -- Option byte 41 (OPBT41)    Reset : 0xFFFFFFFF
+    .dw    0xF8FFFFFF            -- Option byte 42 (OPBT42)    Reset : 0xF8FFFFFF
+    .dw    0x2B01B824            -- Option byte 43 (OPBT43)    Reset : 0x2B01B824
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF
+    .dw    0xFFFFFFFF            -- Reserved                   Reset : 0xFFFFFFFF

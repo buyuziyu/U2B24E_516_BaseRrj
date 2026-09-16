@@ -1,0 +1,140 @@
+; --------------------------------------------------------------------------------
+; @Title: Setup for RH850/U2A SerialFlashProgramming (R7F702Z19EDBG)
+; @Description:
+;   SerialFlashProgramming allows programming of:
+;   - all CPU Flash-areas and
+;   - programming of the OptionBytes
+;   - script supports DoubleMap- and SingelMap-Mode
+;
+; @Author: STA
+; @Board: RH850-U2A-516PIN-T1-V1
+; @Chip: R7F702Z19EDBG
+; @Copyright: (C) 1989-2021 Lauterbach GmbH, licensed for use with TRACE32(R) only
+; --------------------------------------------------------------------------------
+; $Id: rh850_serialflashprog.cmm 17359 2021-03-19 08:43:01Z estahleder $
+
+  LOCAL &opbt12
+
+; Basic Setup
+  SYStem.RESet
+  SYStem.CPU R7F7025BNFABC
+
+  SYStem.OSCCLOCK   20000000.        ; UART/CSI parameters
+  SYStem.CORECLOCK 400000000.        ; UART/CSI parameters 
+  SYStem.BAUDRATE  2000kbps          ; UART communication speed
+  SYStem.JtagClock 10.MHz            ; CSI  communication speed
+
+; select communication method
+;  SYStem.CONFIG.DEBUGPORTTYPE UART   ; UART-SerialFlashProgramming Mode
+  SYStem.CONFIG.DEBUGPORTTYPE CSI    ; CSI-SerialFlashProgramming Mode
+
+  SYStem.Mode Prepare                ; connect to CPU
+
+;-------------
+; get OPBT12 to check for DoubleMapMode
+  MAP.RESet
+  &opbt12=Data.Long(d:0xff3213d0)
+
+  MAP.DenyAccess  ; disable all memory accesses (default)
+                  ; enable memory access for declared flash areas only
+
+  FLASH.RESet
+
+  IF ((&opbt12&0x3)==0) ; ----------- DoubleMapMode -----------
+  (
+    FLASH.Create 1.  C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0/1"
+    FLASH.Create 1.  C:0x00020000--0x003FFFFF 0x00010000 RH850 Long /INFO "User Area 0/1"
+    FLASH.Create 1.  C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 2/3"
+    FLASH.Create 1.  C:0x00420000--0x007FFFFF 0x00010000 RH850 Long /INFO "User Area 2/3"
+    MAP.NoDenyAccess C:0x00000000--0x007FFFFF
+
+    FLASH.Create 3.  C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0/1"
+    MAP.NoDenyAccess C:0x08000000--0x0800FFFF
+  )
+  ELSE                  ; ----------- SingleMapMode -----------
+  (
+    FLASH.Create 1.  C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+    FLASH.Create 1.  C:0x00020000--0x003FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+    FLASH.Create 1.  C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 1"
+    FLASH.Create 1.  C:0x00420000--0x007FFFFF 0x00010000 RH850 Long /INFO "User Area 1"
+    FLASH.Create 1.  C:0x00800000--0x0081FFFF 0x00004000 RH850 Long /INFO "User Area 2"
+    FLASH.Create 1.  C:0x00820000--0x00BFFFFF 0x00010000 RH850 Long /INFO "User Area 2"
+    FLASH.Create 1.  C:0x00C00000--0x00C1FFFF 0x00004000 RH850 Long /INFO "User Area 3"
+    FLASH.Create 1.  C:0x00C20000--0x00FFFFFF 0x00010000 RH850 Long /INFO "User Area 3"
+    MAP.NoDenyAccess C:0x00000000--0x00FFFFFF
+
+    FLASH.Create 3.  C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+    MAP.NoDenyAccess C:0x08000000--0x0800FFFF
+
+    FLASH.Create 3.  C:0x08400000--0x0840FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+    MAP.NoDenyAccess C:0x08400000--0x0840FFFF
+  )
+
+  FLASH.Create 2.  C:0xFF200000--0xFF28FFFF 0x00001000 RH850 Long /INFO "Data Area"
+  MAP.NoDenyAccess C:0xFF200000--0xFF28FFFF
+
+  FLASH.Create 2.  C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Data Extra Area"
+  MAP.NoDenyAccess C:0xFF320000--0xFF3207FF
+
+  FLASH.Create 7.  C:0xFF321200--0xFF3217FF 0x00000600 RH850CFG Long /INFO "Configuration Area"
+  MAP.NoDenyAccess C:0xFF321200--0xFF3217FF
+
+;  FLASH.Create 7.  C:0xFF322200--0xFF3227FF 0x00000600 RH850CFG Long /INFO "Security Setting Area"
+  MAP.NoDenyAccess C:0xFF322200--0xFF3227FF
+
+;  FLASH.Create 7.  C:0xFF323200--0xFF3237FF 0x00000600 RH850CFG Long /INFO "Block Protection Area 0"
+  MAP.NoDenyAccess C:0xFF323200--0xFF3237FF
+
+;  FLASH.Create 7.  C:0xFF340A00--0xFF340FFF 0x00000600 RH850CFG Long /INFO "Block Protection Area 1"
+  MAP.NoDenyAccess C:0xFF340A00--0xFF340FFF
+
+
+;------
+; Attention: "Configuration Area", "Security Setting Area", "Block Protection Areas"
+;  always use programming command
+;    FLASH.AUTO ....
+;  to keep the old, not modified values of the area.
+;
+;------
+; Example Configuration-Setting-Area
+;  FLASH.AUTO 0xFF321200--0xFF3217FF ; use AUTO to keep old values !!!
+;
+; load from file
+;  Data.LOAD * "Configuration-Setting-Area"
+;
+; or patch (example for OPBT12)
+;  Data.Set D:0xFF3213D0 %LE %Long 0xFFFFFFFC  ; DoubleMapMode
+;  Data.Set D:0xFF3213D0 %LE %Long 0xFFFFFFFD  ; SingleMapMode;
+;
+;  FLASH.AUTO OFF
+;------
+
+
+; Flash programming example
+  DIALOG.YESNO "Program flash memory?"
+  LOCAL &progflash
+  ENTRY &progflash
+  IF &progflash 
+  (
+    FLASH.ReProgram ALL        ; unit "1." == UserArea, see flash.list
+    Data.LOAD.auto *
+    FLASH.ReProgram OFF
+  )
+
+; Flash programming example (Configuration Area)
+  DIALOG.YESNO "Program Configuration Area?"
+  LOCAL &progflash
+  ENTRY &progflash
+  IF &progflash 
+  (
+    FLASH.AUTO       0xFF321200--0xFF3217FF ; use AUTO to keep old values !!!
+    Data.LOAD.auto * 0xFF321200--0xFF3217FF ; load configuration-area data only
+    FLASH.AUTO OFF                          ; do programming
+  )
+
+  ENDDO
+
+
+
+
+

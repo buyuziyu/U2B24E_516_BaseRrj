@@ -1,0 +1,51 @@
+########################################################################################################################
+# AUTOSAR Renesas R4.8.0 SPI Driver Generation Tool for X2x                   
+# Run time      = [10 Jul 2026 - 18:50:04]
+#    Command line arguments = .\U2B24-E.arxml
+#	..\X2x\modules\spi\generator\U2B24-E\R2211_spi_U2B24-E_BSWMDT.arxml
+#	..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_spi.arxml
+#	..\X2x\common\generic\stubs\22_11\Os\xml\Os_spi.arxml
+#	..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_spi.arxml
+#
+# Copyright(c) 2023, 2024 Renesas Electronics Corporation. All rights reserved.
+########################################################################################################################
+
+INF000001: Tool Version: MCALConfGen.exe version: 2.3.0, SpiU2Bx-E.dll 
+           version: 2.5.1 
+INF000002: Command line arguments: MCALConfGen.exe -m spi -o spi_output  
+           .\U2B24-E.arxml Translation.trxml  
+           ..\X2x\modules\spi\generator\U2B24-E\R2211_spi_U2B24-E_BSWMDT.arxml  
+           ..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_spi.arxml  
+           ..\X2x\common\generic\stubs\22_11\Os\xml\Os_spi.arxml 
+           ..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_spi.arxml 
+WRN083013: The Dem error configured by parameter  
+           </ActiveEcuC/Dem/DemConfigSet/DemEventParameter_001> was  
+           disabled since the paramter <SPI_E_HARDWARE_ERROR> in Dem is  
+           NOT set to STANDARD_REPORTING. FileName:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml. 
+           Path: /ActiveEcuC/Dem/DemConfigSet/DemEventParameter_001. 
+WRN083013: The Dem error configured by parameter  
+           </ActiveEcuC/Dem/DemConfigSet/DemEventParameter> was disabled  
+           since the paramter <SPI_E_DATA_TX_TIMEOUT_FAILURE> in Dem is  
+           NOT set to STANDARD_REPORTING. FileName:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml. 
+           Path: /ActiveEcuC/Dem/DemConfigSet/DemEventParameter. 
+INF083004: The value of 'SpiClockFrequencyRefImmediateValue' parameter in  
+           the container 'SpiDriver' having short name 'SpiDriver' will  
+           not be used since the 'SpiEnableClkImmediateValue' parameter  
+           in the container 'SpiGeneral' having short name 'SpiGeneral'  
+           is configured as <false>. File Name:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml 
+           Path: /ActiveEcuC/Spi/SpiDriver 
+INF083001: Calculated SPI baud rate for job 'SpiJob' in configuration set 
+           'SpiDriver' is < 625000 Hz>. 
+INF000004: Opened file <spi_output\include\Spi_Cfg.h> at [10 Jul 2026 - 
+           18:50:04]. 
+INF000004: Opened file <spi_output\src\Spi_Lcfg.c> at [10 Jul 2026 - 
+           18:50:04]. 
+INF000004: Opened file <spi_output\src\Spi_PBcfg.c> at [10 Jul 2026 - 
+           18:50:04]. 
+INF000004: Opened file <spi_output\Spi.log> at [10 Jul 2026 - 18:50:04]. 
+INF000005: <0> Error(s) and <2> Warning(s) detected. 
+INF000007: Execution completed successfully with warnings. 
+

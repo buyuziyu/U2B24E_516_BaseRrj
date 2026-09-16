@@ -1,0 +1,1668 @@
+; --------------------------------------------------------------------------------
+; @Title: RH850 AutoSetup
+;
+; @Description:
+; The script does the basic setup for Debugging or SerialFlashProgramming
+; - AutoDetection of DebugPortType
+; - AutoDetection of maximum JtagClock/Baudrate
+; - AutoDetection of Target CPU
+; - AutoDetection of Flash Configuration
+;
+; If the script is excuted without parameters a DialogBox is opened to ask for
+; some target specific parameters.
+;
+; Optional Parameters:
+; - DEBUGPORTTYPE=<interface-mode>
+;    DEBUG --> AutoDetection of interface mode (JTAG, LPD4, LPD1)
+;    JTAG  --> use JTAG for debugging
+;    LPD4  --> use LPD4 for debugging
+;    LPD1  --> use LPD1 for debugging
+;    UART  --> use 2pin SerialFlashProgramming
+;    UART1 --> use 1pin SerialFlashProgramming
+;    
+; - OSCCLOCK=<oscillator-frequency> ; for SerialFlashProgramming
+; - CORECLOCK=<core-frequency>      ; for SerialFlashProgramming
+; - BAUDRATE=<baudrate>             ; for SerialFlashProgramming and LPD4
+; - PREPAREONLY                     ; do not open flash programming dialog
+; - ERRORRESPONSE                   ; script returns error strings
+;                                   ; -> OK:, OK:PREPAREDONE
+;                                   ; -> ERROR:, ERROR:DETECTCPU, ERROR:NOFLASHBINARY
+;
+; Example:
+;    RUN rh850_autosetup.cmm DEBUGPORTTYPE=DEBUG BAUDRATE=2000kbps PREPAREONLY
+; 
+; The found setup can be saved to a script with command:
+;
+;    STOre <MySetupFile.cmm> SYStem FLASH
+;
+; --------------------------------------------------------------------------------
+; @Author: estahleder
+; @Chip: R7F70* 
+; @Copyright: (C) 1989-2024 Lauterbach GmbH, licensed for use with TRACE32(R) only
+; $Rev: 13756 $
+; $Id: rh850_autosetup.cmm 13756 2024-07-31 09:07:53Z estahleder $
+; --------------------------------------------------------------------------------
+
+
+ PMACRO.EXPLICIT
+
+; Macro Declarations
+ LOCAL &oscclock &coreclock &baudrate
+ LOCAL &parameters &param_prepareonly &param_debugporttype
+ LOCAL &param_oscclock &param_coreclock &param_baudrate
+ LOCAL &param_errorresponse
+
+ ENTRY %LINE &parameters
+ &param_prepareonly=(STRing.SCAN(STRing.UPpeR("&parameters"),"PREPAREONLY",0)!=-1)
+ &param_debugporttype=STRing.SCANAndExtract(STRing.UPpeR("&parameters"),"DEBUGPORTTYPE=","")
+ &param_oscclock=STRing.SCANAndExtract(STRing.UPpeR("&parameters"),"OSCCLOCK=","")
+ &param_coreclock=STRing.SCANAndExtract(STRing.UPpeR("&parameters"),"CORECLOCK=","")
+ &param_baudrate=STRing.SCANAndExtract(STRing.UPpeR("&parameters"),"BAUDRATE=","")
+ &param_errorresponse=(STRing.SCAN(STRing.UPpeR("&parameters"),"ERRORRESPONSE",0)!=-1)
+
+ IF "&param_oscclock"!=""
+   SYStem.OSCCLOCK &param_oscclock
+
+ IF "&param_coreclock"!=""
+   SYStem.CORECLOCK &param_coreclock
+
+ IF "&param_baudrate"!=""
+   SYStem.BAUDRATE &param_baudrate
+   
+ IF "&param_debugporttype"!=""
+ (
+   IF "&param_debugporttype"=="DEBUG"
+     &param_debugporttype="JTAG"
+
+   SYStem.Down
+   SYStem.CONFIG DEBUGPORTTYPE &param_debugporttype
+ )
+
+; --------------------------------------------------------------------------------
+; RH850 AutoSetup
+; --------------------------------------------------------------------------------
+
+ IF (HOSTMCI()==FALSE())
+ (
+   IF "&param_debugporttype"==""
+     GOSUB SetupDialog     ; get    Setup Parameters from Dialog
+ )
+
+ GOSUB DetectCPU         ; detect DEBUGPORTTYPE and CPU
+ GOSUB FlashDeclaration  ; do     FLASH Declaration
+
+ IF &param_prepareonly
+   GOTO EndOK_PREPAREDONE   ; Script ends here if called with parameter PREPAREONLY
+
+; Flash programming example
+ DIALOG.YESNO "Program flash memory?"
+ LOCAL &progflash
+ ENTRY &progflash
+ IF &progflash 
+ (
+   FLASH.ReProgram ALL
+   Data.LOAD.auto *
+   FLASH.ReProgram.off 
+ )
+
+ GOTO EndOK
+; End of RH850 AutoSetup
+; --------------------------------------------------------------------------------
+
+; --------------------------------------------------------------------------------
+; Error Response:
+; Note: Do not modify the ENDDO parameter strings!
+;       -> might break the error handling of the calling script
+
+EndOK:
+ IF &param_errorresponse
+   ENDDO OK:
+ ELSE
+   ENDDO
+
+EndOK_PREPAREDONE:
+ IF &param_errorresponse
+   ENDDO OK:PREPAREDONE
+ ELSE
+   ENDDO PREPAREDONE
+
+EndERROR:
+ IF &param_errorresponse
+   ENDDO ERROR:
+ ELSE
+   END
+
+EndERROR_DETECTCPU:
+ IF &param_errorresponse
+   ENDDO ERROR:DETECTCPU
+ ELSE
+   END
+
+EndERROR_NOFLASHBINARY:
+ IF &param_errorresponse
+   ENDDO ERROR:NOFLASHBINARY
+ ELSE
+   END
+
+; --------------------------------------------------------------------------------
+; Get Setup Parameters from Dialog-Window
+; --------------------------------------------------------------------------------
+
+SetupDialog:
+
+DIALOG.view
+(&
+        HEADER "RH850 AutoSetup"
+
+        POS 2. 0.5 60. 1.5
+A.A:    CHOOSEBOX "AutoSetup for Debugging"
+        (
+          GOSUB SetupDialog_DEBUG
+        )
+A.B:    CHOOSEBOX "AutoSetup for Serial-Flash-Programming (Please enter target specific parameters)"
+        (
+          GOSUB SetupDialog_UART
+        )
+
+        POS 2. 4. 17. 1.
+        TEXT "OSC Frequency (Hz)"
+        POS 2. 5. 17. 1.
+OSC:    EDIT "8000000." ""
+
+        POS 20. 4 17. 1.
+        TEXT "CPU Frequency (Hz)"
+        POS 20. 5 17. 1.
+CLOCK:  EDIT "80000000." ""
+
+        POS 40. 4 17. 1.
+        TEXT "Baudrate"
+        POS 40. 5 17. 1.
+BAUD:   PULLDOWN "9600bps,38400bps,115200bps,500Kbps,1000Kbps,1500Kbps,2000Kbps" ""
+
+        POS 2. 7.  9.
+        DEFBUTTON "Ok" "CONTINUE"
+
+        POS 20. 7.  9.
+        BUTTON "Cancel"
+        (
+          DIALOG.END
+          END
+        )
+        POS 40. 7.  9.
+        BUTTON "Help"
+        (
+          DIALOG.MESSAGE " Get basic setup for Debugging or SerialFlashProgramming:" \
+" - Detection of DebugPortType (JTAG, LPD4, LPD1, UART)" \
+" - Detection of maximum JtagClock/Baudrate" \
+" - Detection of Target-CPU and Flash-Configuration" \
+"" \
+" The found setup can be saved as script file, use command:" \
+"   STOre <MySetupFile.cmm> SYStem FLASH " \
+"" \
+" For further information check comments in file:" \
+"   ~~/demo/rh850/flash/rh850_autosetup.cmm "
+        )
+)
+
+
+ LOCAL &t1
+
+; init Dialog-Window
+ IF (SYStem.MODE()>=5)      ; SYStem.UP
+ (
+   GOSUB SetupDialog_DEBUG
+   DIALOG.Set A.A
+ )
+ ELSE IF (SYStem.MODE()==4) ; SYStem.PREPARE
+ (
+   GOSUB SetupDialog_UART
+   DIALOG.Set A.B
+ )
+ ELSE                       ; SYStem.DOWN
+ (
+   SYStem.CONFIG.DEBUGPORTTYPE JTAG
+   GOSUB SetupDialog_DEBUG
+   DIALOG.Set A.A
+ )
+
+dlg_stop:
+ STOP ; wait till OK button is pressed
+
+ &oscclock=DIALOG.STRing(OSC)
+ &coreclock=DIALOG.STRing(CLOCK)
+ &baudrate=DIALOG.STRing(BAUD)
+
+ ON ERROR GOTO 
+ (
+   PRINT %ERROR "&oscclock"+": is no valid frequency value!"
+   GOTO dlg_stop
+ )
+ Eval &oscclock
+ ON ERROR
+ 
+ &t1=EVAL.TYPE()
+ ;   &DInteger     DIntNum       DFloat       DHex        DNumeric
+ IF (&t1!=0x08)&&(&t1!=0x2E)&&(&t1!=0x10)&&(&t1!=0x04)&&(&t1!=0x3E)
+ (
+   &t1="&oscclock"+": is no valid frequency value!"
+   PRINT %ERROR "&t1"
+   &oscclock=0.
+   GOTO dlg_stop
+ )
+
+ ON ERROR GOTO 
+ (
+   PRINT %ERROR "&coreclock"+": is no valid frequency value!"
+   GOTO dlg_stop
+ )
+ Eval &coreclock
+ ON ERROR
+
+ &t1=EVAL.TYPE()
+ ;   &DInteger     DIntNum       DFloat       DHex        DNumeric
+ IF (&t1!=0x08)&&(&t1!=0x2E)&&(&t1!=0x10)&&(&t1!=0x04)&&(&t1!=0x3E)
+ (
+   &t1="&coreclock"+": no valid frequency value!"
+   PRINT %ERROR "&t1"
+   &coreclock=0.
+   GOTO dlg_stop
+ )
+
+ SYStem.OSCCLOCK  &oscclock 
+ SYStem.CORECLOCK &coreclock
+ SYStem.BAUDRATE  &baudrate
+
+
+ IF DIALOG.BOOLEAN(A.A)  ; do setup for DEBUG
+ (
+   IF (SYStem.MODE()<5)  ; SYStem is not UP mode
+   (
+     SYStem.Down
+     SYStem.CONFIG.DEBUGPORTTYPE JTAG
+   )
+ )
+ ELSE                    ; do setup for SerialFlashProgramming
+ (
+   IF (SYStem.MODE()!=4) ; SYStem is not in PREPARE mode
+   (
+     SYStem.Down
+     SYStem.CONFIG.DEBUGPORTTYPE UART
+   )
+ )
+
+ DIALOG.END
+
+ RETURN
+
+; --------------------------------------------------------------------------------
+SetupDialog_DEBUG:
+  &oscclock=SYStem.OSCCLOCK()
+  &coreclock=SYStem.CORECLOCK()
+  &baudrate=SYStem.BAUDRATE()
+
+  DIALOG.Set OSC "&oscclock"
+  DIALOG.Set CLOCK "&coreclock"
+  DIALOG.Set BAUD "&baudrate"
+
+  DIALOG.Disable OSC
+  DIALOG.Disable CLOCK
+  DIALOG.Disable BAUD
+  RETURN  
+
+; --------------------------------------------------------------------------------
+SetupDialog_UART:
+  &oscclock=SYStem.OSCCLOCK()
+  &coreclock=SYStem.CORECLOCK()
+  &baudrate=SYStem.BAUDRATE()
+  
+  if ("&baudrate"!="9600bps")&&("&baudrate"!="38400bps")&&("&baudrate"!="115200bps")&&("&baudrate"!="500Kbps")&&("&baudrate"!="1000Kbps")&&("&baudrate"!="1500Kbps")&&("&baudrate"!="2000Kbps")
+      &baudrate="1000Kbps"
+  
+  DIALOG.Set OSC "&oscclock"
+  DIALOG.Set CLOCK "&coreclock"
+  DIALOG.Set BAUD "&baudrate"
+
+  DIALOG.Enable OSC
+  DIALOG.Enable CLOCK
+  DIALOG.Enable BAUD
+  RETURN 
+
+; End of SetupDialog:
+; --------------------------------------------------------------------------------
+
+
+; --------------------------------------------------------------------------------
+; Detect DEBUGPORTTYPE and CPU
+; --------------------------------------------------------------------------------
+DetectCPU:
+
+ IF (SYStem.MODE()>=4) ; SYStem is in PREPARE/UP mode
+   RETURN              ; --> DEBUGPORTTYPE- and CPU-Selection was already done
+
+
+ IF ((SYStem.CONFIG.DEBUGPORTTYPE()=="UART")||(SYStem.CONFIG.DEBUGPORTTYPE()=="UART1"))
+ (
+   AREA.CLEAR
+
+TryUart_G4:
+   PRINT ""
+   PRINT "====================================================================="
+   PRINT "====== SYStem.DETECT.CPU with UART (G4-core device) ================="
+   PRINT ""
+   SYStem.Mode.Down
+   SYStem.CPU R7F702Z00ADBG
+
+   ON ERROR GOTO TryUart_G3
+   SYStem.DETECT.CPU
+   ON ERROR
+   GOTO DetectUartDONE
+
+TryUart_G3:
+   PRINT ""
+   PRINT "====================================================================="
+   PRINT "====== SYStem.DETECT.CPU with UART (G3-core device) ================="
+   PRINT ""
+   SYStem.Mode.Down
+   SYStem.CPU R7F701035
+
+   ON ERROR GOTO DetectUartFAILED
+   SYStem.DETECT.CPU
+   ON ERROR
+   GOTO DetectUartDONE
+
+DetectUartFAILED: 
+   PRINT ""
+   PRINT %ERROR  "====================================================================="
+   PRINT %ERROR  "====== SYStem.DETECT.CPU failed --> script terminated ==============="
+   PRINT %ERROR  "====================================================================="
+   PRINT ""
+   AREA.view
+   GOTO EndERROR_DETECTCPU
+
+DetectUartDONE:
+   IF (SYStem.BAUDRATE()=="9600bps") // default value
+      GOSUB Baudrate_2000Kbps
+   AREA.CLEAR
+   SYStem.Mode.Prepare
+ )
+ ELSE
+ (
+   AREA.CLEAR
+
+   IF ("HOSTMCI()"=="TRUE")
+   (
+     ; try with current settings
+     ON ERROR GOTO DetectFAILED
+     SYStem.DETECT.CPU
+     ON ERROR
+     GOTO DetectDONE
+   )
+
+TryCurrentDEBUGPORTYPE:
+   ON ERROR GOTO TryJTAG_G4
+   SYStem.DETECT.CPU
+   ON ERROR
+   GOTO DetectDONE
+ 
+TryJTAG_G4:
+   PRINT ""
+   PRINT "====================================================================="
+   PRINT "====== SYStem.DETECT.CPU with JTAG (G4-core device) ================="
+   PRINT ""
+   SYStem.Mode.Down
+   SYStem.CPU R7F702Z00ADBG
+   SYStem.CONFIG.DEBUGPORTTYPE JTAG
+
+   ON ERROR GOTO TryLPD4_G4
+   SYStem.DETECT.CPU
+   ON ERROR
+   GOTO DetectDONE
+
+TryLPD4_G4:
+   PRINT ""
+   PRINT "====================================================================="
+   PRINT "====== SYStem.DETECT.CPU with LPD4 (G4-core device) ================="
+   PRINT ""
+   SYStem.Mode.Down
+   SYStem.CONFIG.DEBUGPORTTYPE LPD4
+
+   ON ERROR GOTO TryJTAG_G3
+   SYStem.DETECT.CPU
+   ON ERROR
+   GOTO DetectDONE
+
+TryJTAG_G3:
+   PRINT ""
+   PRINT "====================================================================="
+   PRINT "====== SYStem.DETECT.CPU with JTAG =================================="
+   PRINT ""
+   SYStem.Mode.Down
+   SYStem.CPU R7F701035
+   SYStem.CONFIG.DEBUGPORTTYPE JTAG
+
+   ON ERROR GOTO TryLPD4
+   SYStem.DETECT.CPU
+   ON ERROR
+   GOTO DetectDONE
+
+TryLPD4:
+   PRINT ""
+   PRINT "====================================================================="
+   PRINT "====== SYStem.DETECT.CPU with LPD4 =================================="
+   PRINT ""
+   SYStem.Mode.Down
+   SYStem.CONFIG.DEBUGPORTTYPE LPD4
+
+   ON ERROR GOTO TryLPD1
+   SYStem.DETECT.CPU
+   ON ERROR
+   GOTO DetectDONE
+
+TryLPD1:
+   PRINT ""
+   PRINT "====================================================================="
+   PRINT "====== SYStem.DETECT.CPU with LPD1 =================================="
+   PRINT ""
+   SYStem.Mode.Down
+   SYStem.CONFIG.DEBUGPORTTYPE LPD1
+
+   ON ERROR GOTO DetectFAILED
+   SYStem.DETECT.CPU
+   ON ERROR
+   GOTO DetectDONE
+
+DetectFAILED: 
+   PRINT ""
+   PRINT %ERROR  "====================================================================="
+   PRINT %ERROR  "====== SYStem.DETECT.CPU failed --> script terminated ==============="
+   PRINT %ERROR  "====================================================================="
+   PRINT ""
+
+   AREA.view
+   SYStem.Mode.Down
+   SYStem.CONFIG.DEBUGPORTTYPE JTAG
+   GOTO EndERROR_DETECTCPU
+
+DetectDONE:
+   IF (SYStem.CONFIG.DEBUGPORTTYPE()=="JTAG")
+   (
+      IF (SYStem.JtagClock()==1000000.) ; default value
+         GOSUB JtagClockMax
+   )   
+   ELSE IF (SYStem.CONFIG.DEBUGPORTTYPE()=="LPD4")
+   (
+      IF (SYStem.BAUDRATE()=="9600bps") ; default value
+         GOSUB BaudrateMax
+   )
+
+   AREA.CLEAR
+   SYStem.Mode.Up
+ )
+
+ RETURN
+
+; --------------------------------------------------------------------------------
+; Detect JtagClockMax, BaudrateMax
+; --------------------------------------------------------------------------------
+JtagClockMax:
+   SYStem.JtagClock 10.MHz
+   ON ERROR GOTO JtagClock_5MHz
+   SYStem.DETECT.CPU
+   ON ERROR
+   RETURN
+
+JtagClock_5MHz:
+   SYStem.JtagClock 5.MHz
+   ON ERROR GOTO JtagClock_1MHz
+   SYStem.DETECT.CPU
+   ON ERROR
+   RETURN
+
+JtagClock_1MHz:
+   SYStem.JtagClock 1.MHz
+   RETURN
+
+; --------------------------------------------------------------------------------
+BaudrateMax:
+   SYStem.BAUDRATE 12500Kbps
+   ON ERROR GOTO Baudrate_5000Kbps
+   SYStem.DETECT.CPU
+   ON ERROR
+   RETURN
+
+Baudrate_5000Kbps:
+   SYStem.BAUDRATE 5000Kbps
+   ON ERROR GOTO Baudrate_2000Kbps
+   SYStem.DETECT.CPU
+   ON ERROR
+   RETURN
+
+Baudrate_2000Kbps:
+   SYStem.BAUDRATE 2000Kbps
+   ON ERROR GOTO Baudrate_1000Kbps
+   SYStem.DETECT.CPU
+   ON ERROR
+   RETURN
+
+Baudrate_1000Kbps:
+   SYStem.BAUDRATE 1000Kbps
+   ON ERROR GOTO Baudrate_9600bps
+   SYStem.DETECT.CPU
+   ON ERROR
+   RETURN
+
+Baudrate_9600bps:
+   SYStem.BAUDRATE 9600bps
+   RETURN
+
+
+; End of Detect DEBUGPORTTYPE and CPU
+; --------------------------------------------------------------------------------
+
+
+; --------------------------------------------------------------------------------
+; FLASH declaration
+; --------------------------------------------------------------------------------
+FlashDeclaration:
+
+ LOCAL &cpu &coretype &progtype &cpu_subfamily
+
+ &cpu=CPU()
+ IF (STRing.SCAN("&cpu","R7F702",0)==0)
+   &coretype="G4"
+ ELSE IF (STRing.SCAN("&cpu","R7F701",0)==0)
+   &coretype="G3"
+
+ IF ((SYStem.CONFIG.DEBUGPORTTYPE()=="UART")||(SYStem.CONFIG.DEBUGPORTTYPE()=="UART1"))
+   &progtype="RH850"
+ ELSE
+   &progtype="TARGET"
+
+
+ SYStem.MemAccess CPU ; needed for /DualPort option of FLASH.TARGET command
+ FLASH.RESet
+
+ IF ("&coretype"=="G4")
+ (
+   &cpu_subfamily=CPU.SUBFAMILY()
+   IF (STRing.SCAN("&cpu_subfamily","RH850/U2A",0)==0)
+     GOSUB GetFlashConfigU2A
+   ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2B",0)==0)
+     GOSUB GetFlashConfigU2B
+   ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2C",0)==0)
+     GOSUB GetFlashConfigU2C
+   ELSE
+     GOSUB GetFlashConfigFromCpuG4
+   RETURN
+ )
+
+ ; G3-Core Setup
+ IF ((CPUFLASHTYPE()=="rh850p1x_c.bin")&&("&progtype"=="TARGET"))
+    FLASH.TARGET 0xFEBF8000 0xFEBF6000 0x1000 ~~/demo/rh850/flash/long/rh850p1x_c.bin /DualPort /STACKSIZE 0x200 /CORE 0
+
+ IF (("&cpu"=="R7F701325")||("&cpu"=="R7F701345")||("&cpu"=="R7F701370A"))
+ (
+    FLASH.Create 1. 0x00000000--0x0000FFFF 0x2000 &progtype Long
+    FLASH.Create 1. 0x00010000--0x005FFFFF 0x8000 &progtype Long
+    FLASH.Create 3. 0x00800000--0x00BFFFFF 0x8000 &progtype Long
+    FLASH.Create 1. 0x0100A000--0x0100BFFF        NOP       Long /INFO "ECC test area"
+    FLASH.Create 2. 0xFF200000--0xFF2002BF        NOP       Long /INFO "Erase-Counter"
+    FLASH.Create 2. 0xFF2002C0--0xFF22FFFF 0x0040 &progtype Long
+    FLASH.Create 4. 0xFF300000--0xFF3002BF        NOP       Long /INFO "Erase-Counter"
+    FLASH.Create 4. 0xFF3002C0--0xFF307FFF 0x0040 &progtype Long
+ )
+ ELSE IF (("&cpu"=="R7F701326")||("&cpu"=="R7F701371"))
+ (
+    FLASH.Create 1. 0x00000000--0x0000FFFF 0x2000 &progtype Long
+    FLASH.Create 1. 0x00010000--0x003FFFFF 0x8000 &progtype Long
+    FLASH.Create 3. 0x00800000--0x00BFFFFF 0x8000 &progtype Long
+    FLASH.Create 1. 0x0100A000--0x0100BFFF        NOP       Long /INFO "ECC test area"
+    FLASH.Create 2. 0xFF200000--0xFF2002BF        NOP       Long /INFO "Erase-Counter"
+    FLASH.Create 2. 0xFF2002C0--0xFF22FFFF 0x0040 &progtype Long
+    FLASH.Create 4. 0xFF300000--0xFF3002BF        NOP       Long /INFO "Erase-Counter"
+    FLASH.Create 4. 0xFF3002C0--0xFF307FFF 0x0040 &progtype Long
+ )
+ ELSE IF (("&cpu"=="R7F701327")||("&cpu"=="R7F701372"))
+ (
+    FLASH.Create 1. 0x00000000--0x0000FFFF 0x2000 &progtype Long
+    FLASH.Create 1. 0x00010000--0x001FFFFF 0x8000 &progtype Long
+    FLASH.Create 3. 0x00800000--0x0087FFFF 0x8000 &progtype Long
+    FLASH.Create 1. 0x0100A000--0x0100BFFF        NOP       Long /INFO "ECC test area"
+    FLASH.Create 2. 0xFF200000--0xFF2002BF        NOP       Long /INFO "Erase-Counter"
+    FLASH.Create 2. 0xFF2002C0--0xFF20FFFF 0x0040 &progtype Long
+    FLASH.Create 4. 0xFF300000--0xFF3002BF        NOP       Long /INFO "Erase-Counter"
+    FLASH.Create 4. 0xFF3002C0--0xFF307FFF 0x0040 &progtype Long
+ )
+ ELSE IF (("&cpu"=="R7F701328")||("&cpu"=="R7F701329")||("&cpu"=="R7F701330")||("&cpu"=="R7F701331")||("&cpu"=="R7F701333")||("&cpu"=="R7F701373")||("&cpu"=="R7F701374"))
+ (
+    FLASH.Create 1. 0x00000000--0x0000FFFF 0x2000 &progtype Long
+    FLASH.Create 1. 0x00010000--0x001FFFFF 0x8000 &progtype Long
+    FLASH.Create 1. 0x0100A000--0x0100BFFF        NOP       Long /INFO "ECC test area"
+    FLASH.Create 2. 0xFF200000--0xFF2002BF        NOP       Long /INFO "Erase-Counter"
+    FLASH.Create 2. 0xFF2002C0--0xFF20FFFF 0x0040 &progtype Long
+    FLASH.Create 4. 0xFF300000--0xFF3002BF        NOP       Long /INFO "Erase-Counter"
+    FLASH.Create 4. 0xFF3002C0--0xFF307FFF 0x0040 &progtype Long
+ )
+ ELSE
+ (
+    GOSUB GetFlashConfigFromCpu
+ )
+ 
+ RETURN
+
+
+; End FLASH declaration
+; --------------------------------------------------------------------------------
+
+
+
+; --------------------------------------------------------------------------------
+; Get FLASH configuration from cpu (G3-core devices):
+; --------------------------------------------------------------------------------
+GetFlashConfigFromCpu:
+
+; define some macros
+ LOCAL &prdsel1addr &prdsel2addr &prdsel3addr &prdsel4addr &prdnameaddr
+ LOCAL &prdname &i &char &flashbinary
+ LOCAL &CFlashSizeL &CFlashSizeM &CFlashSizeH &DFlashSize
+ LOCAL &base &RamBase &FlashCodeBase
+ LOCAL &data &numb &range
+
+ &prdsel1addr=0xffcd00c0
+ &prdsel2addr=&prdsel1addr+0x4
+ &prdsel3addr=&prdsel1addr+0x8
+ &prdsel4addr=&prdsel1addr+0xc
+ &prdnameaddr=&prdsel1addr+0x10
+
+; get product name from CPU ------------------------------------------------------
+ &i=0
+ WHILE (&i<0x10)
+ (
+   &data=Data.Byte(d:&prdnameaddr+&i)
+   IF (&data!=0x20)
+   (
+     &char=CONVert.CHAR(&data)
+     &prdname="&prdname"+&char
+   )
+   &i=&i+1
+ )
+
+; get memory mapping from CPU ---------------------------------------------------
+ &CFlashSizeL=Data.Long(d:&prdsel1addr)&0xffff          ;  8-kb sectors in BANK-A
+ &CFlashSizeM=(Data.Long(d:&prdsel1addr)>>16.)&0xffff   ; 32-kb sectors in BANK-A
+ &CFlashSizeH=Data.Long(d:&prdsel2addr)&0xffff          ; 32-kb sectors in BANK-B
+ &DFlashSize=Data.Long(d:&prdsel3addr)&0xffff           ; 64-b  sectors
+ &RamBase=Data.Long(d:&prdsel4addr)&0xffffff00          ; Ram BaseAddress
+
+; build flash table -------------------------------------------------------------
+ FLASH.RESet
+
+ &base=0x0
+
+ ; CodeFlash 8kb-sectors BANK-A
+ IF (&CFlashSizeL!=0)
+ (
+   &numb=&CFlashSizeL/0x8
+   &range=&base+(&CFlashSizeL*0x400)-1
+   FLASH.Create 1. &base--&range 0x2000 &progtype Long
+   &base=&base+&CFlashSizeL*0x400  
+ )
+
+ ; CodeFlash 32kb-sectors BANK-A
+ IF (&CFlashSizeM!=0)
+ (
+   &numb=&CFlashSizeM/0x20
+   &range=&base+(&CFlashSizeM*0x400)-1
+   FLASH.Create 1. &base--&range 0x8000 &progtype Long
+   &base=&base+&CFlashSizeM*0x400  
+ )
+
+ ; CodeFlash 32kb-sectors BANK-B
+ &base=0x800000
+ IF (&CFlashSizeH!=0)
+ (
+   &numb=&CFlashSizeH/0x20
+   &range=&base+(&CFlashSizeH*0x400)-1
+   FLASH.Create 1. &base--&range 0x8000 &progtype Long
+   &base=&base+&CFlashSizeH*0x400  
+ )
+
+ ; BootFlash 32kb-sectors
+ &base=0x1000000
+ &numb=1
+ &range=0x1007fff
+ IF (("&progtype"=="TARGET")&&(CPUFLASHTYPE()!="rh850f1x.bin"))
+   FLASH.Create 3. &base--&range 0x8000 NOP Long /INFO "Boot Flash"
+ ELSE
+   FLASH.Create 3. &base--&range 0x8000 &progtype Long
+
+ ; DataFlash 64b-sectors
+ &base=0xff200000
+ IF (&DFlashSize!=0)
+ (
+   &numb=&DFlashSize*0x10
+   &range=&base+(&DFlashSize*0x400)-1
+   FLASH.Create 2. &base--&range 0x0040 &progtype Long
+   &base=&base+&DFlashSize*0x400  
+ )
+
+ ; build FLASH.TARGET command
+ IF ("&progtype"=="TARGET")
+ (
+   &flashbinary=CPUFLASHTYPE()  ; get name of flashbinary for the selected CPU
+
+   IF ("&flashbinary"=="UNDEF")
+   (
+     PRINT %ERROR "TRACE32 has no flash binary defined for the selected CPU --> script terminated"
+     AREA.view
+     GOTO EndERROR_NOFLASHBINARY
+   )
+ 
+   Data.Set &RamBase++0x3fff %Long 0x0   ; init RAM to prevent ECC errors
+
+   &FlashCodeBase=&RamBase+0x2000
+
+   FLASH.TARGET &FlashCodeBase &RamBase 0x1000 ~~/demo/rh850/flash/long/&flashbinary /DualPort /STACKSIZE 0x200 /CORE 0
+ )
+ 
+ RETURN
+
+; End of GetFlashConfigFromCpu:
+; --------------------------------------------------------------------------------
+
+; --------------------------------------------------------------------------------
+; --------------------------------------------------------------------------------
+; Get FLASH configuration from cpu (G4-core devices):
+; --------------------------------------------------------------------------------
+GetFlashConfigFromCpuG4:
+
+; define some macros
+  LOCAL &cpu &cnt &char
+  LOCAL &start &end &size
+  LOCAL &RamBase &RamEnd &FlashCodeBase
+  LOCAL &startexist &endexist
+  LOCAL &flashbinary &cpu_subfamily
+  LOCAL &dflash_sectorsize
+
+
+  MAP.NoDenyAccess
+
+  ; try to read cpu name out of Product-Info-Area
+  &cpu=""
+  &cnt=0
+  WHILE (&cnt<0x10)
+  (
+    &char=CONVert.CHAR(Data.Byte(d:0x80300a0+&cnt))
+    IF &char!=' '
+    (
+      &cpu="&cpu"+&char
+      &cnt=&cnt+1
+    )
+    ELSE
+    (
+      &cnt=0x10
+    )
+  )
+
+  IF (STRing.SCAN("&cpu","R7F702",0)==0)
+  (
+    PRINT "---- AutoDetection successfull ----"
+    PRINT "  RH850_G4 core detected: &cpu"
+
+    FLASH.RESet
+
+    &cpu_subfamily=CPU.SUBFAMILY()
+    IF (STRing.SCAN("&cpu_subfamily","RH850/E2x-FCC2",0)==0)
+    (
+      &cpu_subfamily="RH850/E2x-FCC2"
+    )
+    ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/E2H",0)==0)
+    (
+      &cpu_subfamily="RH850/E2x-FCC2"
+    )
+    ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/E2UH",0)==0)
+    (
+      &cpu_subfamily="RH850/E2x-FCC2"
+    )
+    ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/E2GH",0)==0)
+    (
+      &cpu_subfamily="RH850/E2x-FCC2"
+    )
+    ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/E2GUH",0)==0)
+    (
+      &cpu_subfamily="RH850/E2x-FCC2"
+    )
+
+    &dflash_sectorsize=0x40
+    IF (STRing.SCAN("&cpu_subfamily","RH850/E2x-FCC2",0)==0)
+      &dflash_sectorsize=0x1000
+
+    IF ("&progtype"=="TARGET") ; ----------- SelfProgramming ------------------------------
+    (
+      &start=Data.Long(d:0x08030000)
+      &end=Data.Long(d:0x08030004)
+      IF (&start!=&end)
+        FLASH.Create 1. &start--&end 0x004000 TARGET    Long 0x00 /INFO "(FACI-0) User Area"
+    
+      &start=Data.Long(d:0x08030008)
+      &end=Data.Long(d:0x0803000c)
+      IF (&start!=&end)
+        FLASH.Create 1. &start--&end 0x010000 TARGET    Long 0x00 /INFO "(FACI-0) User Area"
+
+      &start=Data.Long(d:0x08030018)
+      &end=Data.Long(d:0x0803001c)
+      IF (&start!=&end)
+        FLASH.Create 2. &start--&end &dflash_sectorsize TARGET    Long 0x01 /INFO "(FACI-0) Data Area"
+    
+      &start=Data.Long(d:0x08030020)
+      &end=Data.Long(d:0x08030024)
+      IF (&start!=&end)
+        FLASH.Create 2. &start--&end &dflash_sectorsize TARGET    Long 0x11 /INFO "(FACI-1) Data Area"
+
+      ; build FLASH.TARGET command ----------------------------------------
+      &flashbinary=CPUFLASHTYPE()  ; get name of flashbinary for the selected CPU
+      
+      IF ("&flashbinary"=="UNDEF")
+      (
+        PRINT %ERROR "TRACE32 has no flash binary defined for the selected CPU --> script terminated"
+        AREA.view
+        GOTO EndERROR_NOFLASHBINARY
+      )
+ 
+      // get Local-Ram area
+      IF (STRing.SCAN("&cpu_subfamily","RH850/E2x-FCC2",0)==0)
+      (
+        &RamBase=Data.Long(d:0x08030068)
+        &RamEnd=Data.Long(d:0x0803006c)
+
+        &start=Data.Long(d:0x08030078)
+        &end=Data.Long(d:0x0803007c)
+        IF (&start!=&end)
+          FLASH.Create 2. &start--&end TARGET    Long 0x01 /INFO "(FACI-0) Data Extra Area"
+
+        &start=Data.Long(d:0x08030010)
+        &end=Data.Long(d:0x08030014)
+        IF (&start!=&end)
+          FLASH.Create 1. &start--&end NOP    Long 0x00 /INFO "(FACI-0) User Boot Area"
+
+        &start=Data.Long(d:0x08030028)
+        &end=Data.Long(d:0x0803002c)
+        IF (&start!=&end)
+          FLASH.Create 3. &start--&end TARGET Long 0x02 /OTP /INFO "(FACI-0) Security Setting Area"
+
+        &start=Data.Long(d:0x08030038)
+        &end=Data.Long(d:0x0803003c)
+        IF (&start!=&end)
+          FLASH.Create 3. &start--&end TARGET Long 0x03 /OTP /INFO "(FACI-0) Configuration Setting Area"
+
+        &start=Data.Long(d:0x08030048)
+        &end=Data.Long(d:0x0803004c)
+        IF (&start!=&end)
+          FLASH.Create 3. &start--&end TARGET Long 0x04 /OTP /INFO "(FACI-0) Block Protection Area"
+      )
+      ELSE
+      (
+        &RamBase=Data.Long(d:0x08030058)
+        &RamEnd=Data.Long(d:0x0803005c)
+      )
+
+      Data.Set &RamBase--&RamEnd %Long 0x0   ; init RAM to prevent ECC errors
+
+      &FlashCodeBase=&RamBase+0x2000
+
+      FLASH.TARGET &FlashCodeBase &RamBase 0x1000 ~~/demo/rh850/flash/long/&flashbinary /DualPort /STACKSIZE 0x200 /CORE 0
+    )
+
+    ELSE ; ----------- SerialFlashProgramming ----------------------------
+    (
+      IF (STRing.SCAN("&cpu_subfamily","RH850/E2x-FCC2",0)==0)
+      (
+        &start=Data.Long(d:0x08030060)
+        &end=Data.Long(d:0x08030064)
+      )
+      ELSE
+      (
+        &start=Data.Long(d:0x08030050)
+        &end=Data.Long(d:0x08030054)
+      )
+      &size=&end-&start+1.
+      FLASH.Create 3. &start--&end &size NOP Long /INFO "Product Info Area"
+ 
+      MAP.DenyAccess
+      MAP.NoDenyAccess &start--&end
+    
+      &start=Data.Long(d:0x08030000)
+      &end=Data.Long(d:0x08030004)
+      IF (&start!=&end)
+      (
+        FLASH.Create 1. &start--&end 0x004000 RH850    Long /INFO "User Area"
+        MAP.NoDenyAccess &start--&end
+      )
+    
+      &start=Data.Long(d:0x08030008)
+      &end=Data.Long(d:0x0803000c)
+      IF (&start!=&end)
+      (
+        FLASH.Create 1. &start--&end 0x010000 RH850    Long /INFO "User Area"
+        MAP.NoDenyAccess &start--&end
+      )
+
+      &start=Data.Long(d:0x08030010)
+      &end=Data.Long(d:0x08030014)
+      IF (&start!=&end)
+      (
+        FLASH.Create 1. &start--&end 0x010000 RH850    Long /INFO "UserBoot Area"
+        MAP.NoDenyAccess &start--&end
+      )
+    
+      &start=Data.Long(d:0x08030018)
+      &end=Data.Long(d:0x0803001c)
+      IF (&start!=&end)
+      (
+        FLASH.Create 2. &start--&end &dflash_sectorsize RH850    Long /INFO "Data Area"
+        MAP.NoDenyAccess &start--&end
+      )
+    
+      &start=Data.Long(d:0x08030020)
+      &end=Data.Long(d:0x08030024)
+      IF (&start!=&end)
+      (
+        FLASH.Create 2. &start--&end &dflash_sectorsize RH850    Long /INFO "Data Area"
+        MAP.NoDenyAccess &start--&end
+      )
+    
+      &start=Data.Long(d:0x08030028)
+      &end=Data.Long(d:0x0803002c)
+      &size=&end-&start+1.
+      IF (&start!=&end)
+      (
+        FLASH.Create 3. &start--&end &size RH850CFG Long /CENSORSHIP &start--&end /INFO "Security Setting Area"
+        MAP.NoDenyAccess &start--&end
+      )
+    
+      &start=Data.Long(d:0x08030030)
+      &end=Data.Long(d:0x08030034)
+      &size=&end-&start+1.
+      IF (&start!=&end)
+      (
+        IF (FLASH.SECTOR.EXIST(d:&start)) ; overlapping area!
+        (
+          &startexist=FLASH.SECTOR.BEGIN(d:&start)
+          &endexist=FLASH.SECTOR.END(d:&start)
+      
+          FLASH.Delete &startexist--&endexist
+          MAP.DenyAccess &startexist--&endexist
+
+          FLASH.Create 3. &startexist--(&start-1) RH850CFG Long /CENSORSHIP &startexist--(&start-1) /INFO "Security Setting Area" ;
+          MAP.NoDenyAccess &startexist--(&start-1)
+
+          FLASH.Create 3. &start--&end &size      RH850CFG Long /CENSORSHIP &start--&end /INFO "Security Setting Area" ;
+          MAP.NoDenyAccess &start--&end
+
+          &end=FLASH.SECTOR.END(d:&start)
+          FLASH.Create 3. (&end+1)--&endexist     RH850CFG Long /CENSORSHIP (&end+1)--&endexist /INFO "Security Setting Area" ;
+          MAP.NoDenyAccess (&end+1)--&endexist
+        )
+        ELSE
+        (
+          FLASH.Create 3. &start--&end &size RH850CFG Long /CENSORSHIP &start--&end /INFO "Security Setting Area" ;
+          MAP.NoDenyAccess &start--&end
+        )
+      )
+    
+      &start=Data.Long(d:0x08030038)
+      &end=Data.Long(d:0x0803003c)
+      &size=&end-&start+1.
+      IF (&start!=&end)
+      (
+        FLASH.Create 3. &start--&end &size RH850CFG Long /CENSORSHIP &start--&end /INFO "Configuration Area"
+        MAP.NoDenyAccess &start--&end
+      )
+    
+      &start=Data.Long(d:0x08030048)
+      &end=Data.Long(d:0x0803004c)
+      &size=&end-&start+1.
+      IF (&start!=&end)
+      (
+        FLASH.Create 3. &start--&end &size RH850CFG Long /CENSORSHIP &start--&end /INFO "Block Protection Area"
+        MAP.NoDenyAccess &start--&end
+      )
+
+      IF (STRing.SCAN("&cpu_subfamily","RH850/E2x-FCC2",0)==0)
+      (
+        &start=Data.Long(d:0x08030078)
+        &end=Data.Long(d:0x0803007c)
+        &size=&end-&start+1.
+        IF (&start!=&end)
+        (
+          FLASH.Create 2. &start--&end &size RH850 Long /INFO "Data Extra Area"
+          MAP.NoDenyAccess &start--&end
+        )
+      )
+    )
+  )
+  ELSE
+  (
+    PRINT "---- AutoDetection failed --> Script terminated ----"
+  )
+
+  RETURN
+
+; End of GetFlashConfigFromCpuG4:
+; --------------------------------------------------------------------------------
+
+
+; --------------------------------------------------------------------------------
+; --------------------------------------------------------------------------------
+; Get FLASH configuration for RH850/U2A family:
+; --------------------------------------------------------------------------------
+GetFlashConfigU2A:
+
+; define some macros
+  LOCAL &RamBase &RamEnd &FlashCodeBase
+  LOCAL &flashbinary &cpu_subfamily
+
+  MAP.NoDenyAccess
+
+  &cpu_subfamily=CPU.SUBFAMILY()
+  IF (STRing.SCAN("&cpu_subfamily","RH850/U2A",0)==0)
+  (
+    FLASH.RESet
+    IF ("&progtype"=="TARGET") ; ----------- SelfProgramming ------------------------------
+    (
+      IF ("&cpu_subfamily"=="RH850/U2A6")
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00020000--0x002FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00420000--0x006FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF21FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 0"
+        FLASH.Create 2. C:0xFF220000--0xFF22FFFF 0x00001000 TARGET Long 0x11 /INFO "(FACI-1) Data Area 1"
+        FLASH.Create 2. C:0xFF240000--0xFF24FFFF 0x00001000 TARGET Long 0x21 /INFO "(FACI-2) Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long 0x01 /INFO "(FACI-0) Extended Data Area"
+      )
+      ELSE IF ("&cpu_subfamily"=="RH850/U2A8")
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF21FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 0"
+        FLASH.Create 2. C:0xFF220000--0xFF23FFFF 0x00001000 TARGET Long 0x11 /INFO "(FACI-1) Data Area 1"
+        FLASH.Create 2. C:0xFF240000--0xFF24FFFF 0x00001000 TARGET Long 0x21 /INFO "(FACI-2) Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long 0x01 /INFO "(FACI-0) Extended Data Area"
+      )
+      ELSE // RH850/U2A16 or RH850/U2A_EVA
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00800000--0x0081FFFF 0x00004000 TARGET Long 0x10 /INFO "(FACI-1) User Area 2"
+        FLASH.Create 1. C:0x00820000--0x00BFFFFF 0x00010000 TARGET Long 0x10 /INFO "(FACI-1) User Area 2"
+        FLASH.Create 1. C:0x00C00000--0x00C1FFFF 0x00004000 TARGET Long 0x10 /INFO "(FACI-1) User Area 3"
+        FLASH.Create 1. C:0x00C20000--0x00FFFFFF 0x00010000 TARGET Long 0x10 /INFO "(FACI-1) User Area 3"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF23FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 0"
+        FLASH.Create 2. C:0xFF240000--0xFF27FFFF 0x00001000 TARGET Long 0x11 /INFO "(FACI-1) Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF28FFFF 0x00001000 TARGET Long 0x21 /INFO "(FACI-2) Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long 0x01 /INFO "(FACI-0) Extended Data Area"
+      )
+
+      ; build FLASH.TARGET command ----------------------------------------
+      &flashbinary=CPUFLASHTYPE()  ; get name of flashbinary for the selected CPU
+      
+      IF ("&flashbinary"=="UNDEF")
+      (
+        PRINT %ERROR "TRACE32 has no flash binary defined for the selected CPU --> script terminated"
+        AREA.view
+        GOTO EndERROR_NOFLASHBINARY
+      )
+
+      // get Local-Ram area
+      &RamBase=0xfdc00000
+      &RamEnd=0xfdc0ffff
+
+      Data.Set &RamBase--&RamEnd %Long 0x0   ; init RAM to prevent ECC errors
+
+      &FlashCodeBase=&RamBase+0x2000
+
+      FLASH.TARGET &FlashCodeBase &RamBase 0x1000 ~~/demo/rh850/flash/long/&flashbinary /DualPort /STACKSIZE 0x200 /CORE 0
+    )
+    ELSE ; ----------- SerialFlashProgramming ----------------------------
+    (
+      IF ("&cpu_subfamily"=="RH850/U2A6")
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x002FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00420000--0x006FFFFF 0x00010000 RH850 Long /INFO "User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF21FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF220000--0xFF22FFFF 0x00001000 RH850 Long /INFO "Data Area 1"
+        FLASH.Create 2. C:0xFF240000--0xFF24FFFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+      ELSE IF ("&cpu_subfamily"=="RH850/U2A8")
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 1" 
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 RH850 Long /INFO "User Area 1" 
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF21FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF220000--0xFF23FFFF 0x00001000 RH850 Long /INFO "Data Area 1"
+        FLASH.Create 2. C:0xFF240000--0xFF24FFFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+      ELSE // RH850/U2A16 or RH850/U2A_EVA
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 1" 
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 RH850 Long /INFO "User Area 1" 
+        FLASH.Create 1. C:0x00800000--0x0081FFFF 0x00004000 RH850 Long /INFO "User Area 2"
+        FLASH.Create 1. C:0x00820000--0x00BFFFFF 0x00010000 RH850 Long /INFO "User Area 2"
+        FLASH.Create 1. C:0x00C00000--0x00C1FFFF 0x00004000 RH850 Long /INFO "User Area 3"
+        FLASH.Create 1. C:0x00C20000--0x00FFFFFF 0x00010000 RH850 Long /INFO "User Area 3"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF23FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF240000--0xFF27FFFF 0x00001000 RH850 Long /INFO "Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF28FFFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+    )
+  )
+  RETURN
+; End of GetFlashConfigU2A
+; --------------------------------------------------------------------------------
+
+; --------------------------------------------------------------------------------
+; --------------------------------------------------------------------------------
+; Get FLASH configuration for RH850/U2B family:
+; --------------------------------------------------------------------------------
+GetFlashConfigU2B:
+
+; define some macros
+  LOCAL &RamBase &RamEnd &FlashCodeBase
+  LOCAL &flashbinary &cpu_subfamily
+
+  MAP.NoDenyAccess
+
+  &cpu_subfamily=CPU.SUBFAMILY()
+  IF (STRing.SCAN("&cpu_subfamily","RH850/U2B",0)==0)
+  (
+    FLASH.RESet
+    IF ("&progtype"=="TARGET") ; ----------- SelfProgramming ------------------------------
+    (
+      IF (STRing.SCAN("&cpu_subfamily","RH850/U2B6-E",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00020000--0x002FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00420000--0x006FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08300000--0x0830FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF20FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 0"
+        FLASH.Create 2. C:0xFF210000--0xFF21FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF28FFFF 0x00001000 TARGET Long 0x21 /INFO "(FACI-2) Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long 0x01 /INFO "(FACI-0) Extended Data Area"
+      )
+      ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2B12-E",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00800000--0x0081FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 2"
+        FLASH.Create 1. C:0x00820000--0x009FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 2"
+        FLASH.Create 1. C:0x00C00000--0x00C1FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 3"
+        FLASH.Create 1. C:0x00C20000--0x00DFFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 3"
+        FLASH.Create 1. C:0x01C00000--0x01C1FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 6"
+        FLASH.Create 1. C:0x01C20000--0x01CFFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 6"
+        FLASH.Create 1. C:0x01D00000--0x01D1FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 7"
+        FLASH.Create 1. C:0x01D20000--0x01DFFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 7"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08300000--0x0830FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF21FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 0"
+        FLASH.Create 2. C:0xFF220000--0xFF23FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF28FFFF 0x00001000 TARGET Long 0x21 /INFO "(FACI-2) Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long 0x01 /INFO "(FACI-0) Extended Data Area"
+      )
+      ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2B24-E",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00800000--0x0081FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 2"
+        FLASH.Create 1. C:0x00820000--0x00BFFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 2"
+        FLASH.Create 1. C:0x00C00000--0x00C1FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 3"
+        FLASH.Create 1. C:0x00C20000--0x00FFFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 3"
+        FLASH.Create 1. C:0x01000000--0x0101FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 4"
+        FLASH.Create 1. C:0x01020000--0x013FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 4"
+        FLASH.Create 1. C:0x01400000--0x0141FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 5"
+        FLASH.Create 1. C:0x01420000--0x017FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 5"
+        FLASH.Create 1. C:0x01C00000--0x01C1FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 6"
+        FLASH.Create 1. C:0x01C20000--0x01CFFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 6"
+        FLASH.Create 1. C:0x01D00000--0x01D1FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 7"
+        FLASH.Create 1. C:0x01D20000--0x01DFFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 7"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF23FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 0"
+        FLASH.Create 2. C:0xFF240000--0xFF27FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF2A7FFF 0x00001000 TARGET Long 0x21 /INFO "(FACI-2) Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long 0x01 /INFO "(FACI-0) Extended Data Area"
+      )
+      ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2B6",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00020000--0x002FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00300000--0x0031FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00320000--0x005FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08300000--0x0830FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF20FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 0"
+        FLASH.Create 2. C:0xFF210000--0xFF21FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 1"
+        FLASH.Create 2. C:0xFF220000--0xFF22FFFF 0x00001000 TARGET Long 0x21 /INFO "(FACI-2) Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long 0x01 /INFO "(FACI-0) Extended Data Area"
+      )
+      ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2B10",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00020000--0x002FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00300000--0x0031FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00320000--0x005FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00600000--0x0061FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 2"
+        FLASH.Create 1. C:0x00620000--0x007FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 2"
+        FLASH.Create 1. C:0x00800000--0x0081FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 3"
+        FLASH.Create 1. C:0x00820000--0x009FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 3"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08300000--0x0830FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF21FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 0"
+        FLASH.Create 2. C:0xFF220000--0xFF23FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 1"
+        FLASH.Create 2. C:0xFF240000--0xFF24FFFF 0x00001000 TARGET Long 0x21 /INFO "(FACI-2) Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long 0x01 /INFO "(FACI-0) Extended Data Area"
+      )
+      ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2B20",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00800000--0x0081FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 2"
+        FLASH.Create 1. C:0x00820000--0x00BFFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 2"
+        FLASH.Create 1. C:0x00C00000--0x00C1FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 3"
+        FLASH.Create 1. C:0x00C20000--0x00FFFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 3"
+        FLASH.Create 1. C:0x01000000--0x0101FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 4"
+        FLASH.Create 1. C:0x01020000--0x011FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 4"
+        FLASH.Create 1. C:0x01200000--0x0121FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 5"
+        FLASH.Create 1. C:0x01220000--0x013FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 5"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF23FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 0"
+        FLASH.Create 2. C:0xFF240000--0xFF27FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF297FFF 0x00001000 TARGET Long 0x21 /INFO "(FACI-2) Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long 0x01 /INFO "(FACI-0) Extended Data Area"
+      )
+      ELSE // RH850/U2B24 or RH850/U2B_EVA
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 1"
+        FLASH.Create 1. C:0x00800000--0x0081FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 2"
+        FLASH.Create 1. C:0x00820000--0x00BFFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 2"
+        FLASH.Create 1. C:0x00C00000--0x00C1FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 3"
+        FLASH.Create 1. C:0x00C20000--0x00FFFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 3"
+        FLASH.Create 1. C:0x01000000--0x0101FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 4"
+        FLASH.Create 1. C:0x01020000--0x013FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 4"
+        FLASH.Create 1. C:0x01400000--0x0141FFFF 0x00004000 TARGET Long 0x00 /INFO "(FACI-0) User Area 5"
+        FLASH.Create 1. C:0x01420000--0x017FFFFF 0x00010000 TARGET Long 0x00 /INFO "(FACI-0) User Area 5"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 NOP    Long      /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF23FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 0"
+        FLASH.Create 2. C:0xFF240000--0xFF27FFFF 0x00001000 TARGET Long 0x01 /INFO "(FACI-0) Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF2A7FFF 0x00001000 TARGET Long 0x21 /INFO "(FACI-2) Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long 0x01 /INFO "(FACI-0) Extended Data Area"
+      )
+
+      ; build FLASH.TARGET command ----------------------------------------
+      &flashbinary=CPUFLASHTYPE()  ; get name of flashbinary for the selected CPU
+      
+      IF ("&flashbinary"=="UNDEF")
+      (
+        PRINT %ERROR "TRACE32 has no flash binary defined for the selected CPU --> script terminated"
+        AREA.view
+        GOTO EndERROR_NOFLASHBINARY
+      )
+
+      // get Local-Ram area
+      &RamBase=0xfdc00000
+      &RamEnd=0xfdc0ffff
+
+      Data.Set &RamBase--&RamEnd %Long 0x0   ; init RAM to prevent ECC errors
+
+      &FlashCodeBase=&RamBase+0x2000
+
+      FLASH.TARGET &FlashCodeBase &RamBase 0x1000 ~~/demo/rh850/flash/long/&flashbinary /DualPort /STACKSIZE 0x200 /CORE 0
+    )
+    ELSE ; ----------- SerialFlashProgramming ----------------------------
+    (
+      IF (STRing.SCAN("&cpu_subfamily","RH850/U2B6-E",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x002FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00420000--0x006FFFFF 0x00010000 RH850 Long /INFO "User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08300000--0x0830FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF20FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF210000--0xFF21FFFF 0x00001000 RH850 Long /INFO "Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF28FFFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+      ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2B12-E",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00800000--0x0081FFFF 0x00004000 RH850 Long /INFO "User Area 2"
+        FLASH.Create 1. C:0x00820000--0x009FFFFF 0x00010000 RH850 Long /INFO "User Area 2"
+        FLASH.Create 1. C:0x00C00000--0x00C1FFFF 0x00004000 RH850 Long /INFO "User Area 3"
+        FLASH.Create 1. C:0x00C20000--0x00DFFFFF 0x00010000 RH850 Long /INFO "User Area 3"
+        FLASH.Create 1. C:0x01C00000--0x01C1FFFF 0x00004000 RH850 Long /INFO "User Area 6"
+        FLASH.Create 1. C:0x01C20000--0x01CFFFFF 0x00010000 RH850 Long /INFO "User Area 6"
+        FLASH.Create 1. C:0x01D00000--0x01D1FFFF 0x00004000 RH850 Long /INFO "User Area 7"
+        FLASH.Create 1. C:0x01D20000--0x01DFFFFF 0x00010000 RH850 Long /INFO "User Area 7"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08300000--0x0830FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF21FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF220000--0xFF23FFFF 0x00001000 RH850 Long /INFO "Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF28FFFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+      ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2B24-E",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00800000--0x0081FFFF 0x00004000 RH850 Long /INFO "User Area 2"
+        FLASH.Create 1. C:0x00820000--0x00BFFFFF 0x00010000 RH850 Long /INFO "User Area 2"
+        FLASH.Create 1. C:0x00C00000--0x00C1FFFF 0x00004000 RH850 Long /INFO "User Area 3"
+        FLASH.Create 1. C:0x00C20000--0x00FFFFFF 0x00010000 RH850 Long /INFO "User Area 3"
+        FLASH.Create 1. C:0x01000000--0x0101FFFF 0x00004000 RH850 Long /INFO "User Area 4"
+        FLASH.Create 1. C:0x01020000--0x013FFFFF 0x00010000 RH850 Long /INFO "User Area 4"
+        FLASH.Create 1. C:0x01400000--0x0141FFFF 0x00004000 RH850 Long /INFO "User Area 5"
+        FLASH.Create 1. C:0x01420000--0x017FFFFF 0x00010000 RH850 Long /INFO "User Area 5"
+        FLASH.Create 1. C:0x01C00000--0x01C1FFFF 0x00004000 RH850 Long /INFO "User Area 6"
+        FLASH.Create 1. C:0x01C20000--0x01CFFFFF 0x00010000 RH850 Long /INFO "User Area 6"
+        FLASH.Create 1. C:0x01D00000--0x01D1FFFF 0x00004000 RH850 Long /INFO "User Area 7"
+        FLASH.Create 1. C:0x01D20000--0x01DFFFFF 0x00010000 RH850 Long /INFO "User Area 7"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF23FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF240000--0xFF27FFFF 0x00001000 RH850 Long /INFO "Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF2A7FFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+      ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2B6",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x002FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00300000--0x0031FFFF 0x00004000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00320000--0x005FFFFF 0x00010000 RH850 Long /INFO "User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08300000--0x0830FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF20FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF210000--0xFF21FFFF 0x00001000 RH850 Long /INFO "Data Area 1"
+        FLASH.Create 2. C:0xFF220000--0xFF22FFFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+      ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2B10",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x002FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00300000--0x0031FFFF 0x00004000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00320000--0x005FFFFF 0x00010000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00600000--0x0061FFFF 0x00004000 RH850 Long /INFO "User Area 2"
+        FLASH.Create 1. C:0x00620000--0x007FFFFF 0x00010000 RH850 Long /INFO "User Area 2"
+        FLASH.Create 1. C:0x00800000--0x0081FFFF 0x00004000 RH850 Long /INFO "User Area 3"
+        FLASH.Create 1. C:0x00820000--0x009FFFFF 0x00010000 RH850 Long /INFO "User Area 3"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08300000--0x0830FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF21FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF220000--0xFF23FFFF 0x00001000 RH850 Long /INFO "Data Area 1"
+        FLASH.Create 2. C:0xFF240000--0xFF24FFFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+      ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2B20",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00800000--0x0081FFFF 0x00004000 RH850 Long /INFO "User Area 2"
+        FLASH.Create 1. C:0x00820000--0x00BFFFFF 0x00010000 RH850 Long /INFO "User Area 2"
+        FLASH.Create 1. C:0x00C00000--0x00C1FFFF 0x00004000 RH850 Long /INFO "User Area 3"
+        FLASH.Create 1. C:0x00C20000--0x00FFFFFF 0x00010000 RH850 Long /INFO "User Area 3"
+        FLASH.Create 1. C:0x01000000--0x0101FFFF 0x00004000 RH850 Long /INFO "User Area 4"
+        FLASH.Create 1. C:0x01020000--0x011FFFFF 0x00010000 RH850 Long /INFO "User Area 4"
+        FLASH.Create 1. C:0x01200000--0x0121FFFF 0x00004000 RH850 Long /INFO "User Area 5"
+        FLASH.Create 1. C:0x01220000--0x013FFFFF 0x00010000 RH850 Long /INFO "User Area 5"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF23FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF240000--0xFF27FFFF 0x00001000 RH850 Long /INFO "Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF297FFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+      ELSE // RH850/U2B24 or RH850/U2B_EVA
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00800000--0x0081FFFF 0x00004000 RH850 Long /INFO "User Area 2"
+        FLASH.Create 1. C:0x00820000--0x00BFFFFF 0x00010000 RH850 Long /INFO "User Area 2"
+        FLASH.Create 1. C:0x00C00000--0x00C1FFFF 0x00004000 RH850 Long /INFO "User Area 3"
+        FLASH.Create 1. C:0x00C20000--0x00FFFFFF 0x00010000 RH850 Long /INFO "User Area 3"
+        FLASH.Create 1. C:0x01000000--0x0101FFFF 0x00004000 RH850 Long /INFO "User Area 4"
+        FLASH.Create 1. C:0x01020000--0x013FFFFF 0x00010000 RH850 Long /INFO "User Area 4"
+        FLASH.Create 1. C:0x01400000--0x0141FFFF 0x00004000 RH850 Long /INFO "User Area 5"
+        FLASH.Create 1. C:0x01420000--0x017FFFFF 0x00010000 RH850 Long /INFO "User Area 5"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF23FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF240000--0xFF27FFFF 0x00001000 RH850 Long /INFO "Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF2A7FFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+    )
+  )
+  RETURN
+; End of GetFlashConfigU2B
+; --------------------------------------------------------------------------------
+
+; --------------------------------------------------------------------------------
+; --------------------------------------------------------------------------------
+; Get FLASH configuration for RH850/U2C family:
+; --------------------------------------------------------------------------------
+GetFlashConfigU2C:
+
+; define some macros
+  LOCAL &RamBase &RamEnd &FlashCodeBase
+  LOCAL &flashbinary &cpu_subfamily
+
+  MAP.NoDenyAccess
+
+  &cpu_subfamily=CPU.SUBFAMILY()
+  IF (STRing.SCAN("&cpu_subfamily","RH850/U2C",0)==0)
+  (
+    FLASH.RESet
+    IF ("&progtype"=="TARGET") ; ----------- SelfProgramming ------------------------------
+    (
+      IF (STRing.SCAN("&cpu_subfamily","RH850/U2C2",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x000FFFFF 0x00010000 TARGET Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 TARGET Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00420000--0x004FFFFF 0x00010000 TARGET Long /INFO "User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 NOP    Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF21FFFF 0x00001000 TARGET Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF280000--0xFF28FFFF 0x00001000 TARGET Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long /INFO "Extended Data Area"
+      )
+      ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2C4",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x001FFFFF 0x00010000 TARGET Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 TARGET Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00420000--0x005FFFFF 0x00010000 TARGET Long /INFO "User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 NOP    Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF23FFFF 0x00001000 TARGET Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF280000--0xFF28FFFF 0x00001000 TARGET Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long /INFO "Extended Data Area"
+      )
+      ELSE // RH850/U2C8 or RH850/U2C8_EVA
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 TARGET Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 TARGET Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 TARGET Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 TARGET Long /INFO "User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 NOP    Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 NOP    Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF23FFFF 0x00001000 TARGET Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF240000--0xFF25FFFF 0x00001000 TARGET Long /INFO "Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF28FFFF 0x00001000 TARGET Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 TARGET Long /INFO "Extended Data Area"
+      )
+
+      ; build FLASH.TARGET command ----------------------------------------
+      &flashbinary=CPUFLASHTYPE()  ; get name of flashbinary for the selected CPU
+      
+      IF ("&flashbinary"=="UNDEF")
+      (
+        PRINT %ERROR "TRACE32 has no flash binary defined for the selected CPU --> script terminated"
+        AREA.view
+        GOTO EndERROR_NOFLASHBINARY
+      )
+
+      // get Local-Ram area
+      &RamBase=0xfdc00000
+      &RamEnd=0xfdc0ffff
+
+      Data.Set &RamBase--&RamEnd %Long 0x0   ; init RAM to prevent ECC errors
+
+      &FlashCodeBase=&RamBase+0x2000
+
+      FLASH.TARGET &FlashCodeBase &RamBase 0x1000 ~~/demo/rh850/flash/long/&flashbinary /DualPort /STACKSIZE 0x200 /CORE 0
+    )
+    ELSE ; ----------- SerialFlashProgramming ----------------------------
+    (
+      IF (STRing.SCAN("&cpu_subfamily","RH850/U2C2",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x000FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00420000--0x004FFFFF 0x00010000 RH850 Long /INFO "User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF21FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF280000--0xFF28FFFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+      ELSE IF (STRing.SCAN("&cpu_subfamily","RH850/U2C4",0)==0)
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x001FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00420000--0x005FFFFF 0x00010000 RH850 Long /INFO "User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF23FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF280000--0xFF28FFFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+      ELSE // RH850/U2C8 or RH850/U2C8_EVA
+      (
+        FLASH.Create 1. C:0x00000000--0x0001FFFF 0x00004000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00020000--0x003FFFFF 0x00010000 RH850 Long /INFO "User Area 0"
+        FLASH.Create 1. C:0x00400000--0x0041FFFF 0x00004000 RH850 Long /INFO "User Area 1"
+        FLASH.Create 1. C:0x00420000--0x007FFFFF 0x00010000 RH850 Long /INFO "User Area 1"
+
+        FLASH.Create 3. C:0x08000000--0x0800FFFF 0x00010000 RH850 Long /INFO "User Boot Area 0"
+        FLASH.Create 3. C:0x08400000--0x0840FFFF 0x00010000 RH850 Long /INFO "User Boot Area 1"
+
+        FLASH.Create 2. C:0xFF200000--0xFF23FFFF 0x00001000 RH850 Long /INFO "Data Area 0"
+        FLASH.Create 2. C:0xFF240000--0xFF25FFFF 0x00001000 RH850 Long /INFO "Data Area 1"
+        FLASH.Create 2. C:0xFF280000--0xFF28FFFF 0x00001000 RH850 Long /INFO "Data Area 2"
+        FLASH.Create 2. C:0xFF320000--0xFF3207FF 0x00000800 RH850 Long /INFO "Extended Data Area"
+      )
+    )
+  )
+  RETURN
+; End of GetFlashConfigU2C
+; --------------------------------------------------------------------------------

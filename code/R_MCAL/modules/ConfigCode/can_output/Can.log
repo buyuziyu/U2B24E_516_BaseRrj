@@ -1,0 +1,43 @@
+########################################################################################################################
+# AUTOSAR Renesas R4.8.0 CAN Driver Generation Tool for X2x                   
+# Run time      = [10 Jul 2026 - 18:49:20]
+#    Command line arguments = U2B24-E.arxml
+#	..\X2x\modules\can\generator\U2B24-E\R2211_can_U2B24-E_BSWMDT.arxml
+#	..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_can.arxml
+#	..\X2x\common\generic\stubs\22_11\EcuM\xml\EcuM_can.arxml
+#	..\X2x\common\generic\stubs\22_11\Os\xml\Os_can.arxml
+#	..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_can.arxml
+#
+# Copyright(c) 2023, 2024 Renesas Electronics Corporation. All rights reserved.
+########################################################################################################################
+
+INF000001: Tool Version: MCALConfGen.exe version: 2.3.0, CanU2Bx-E.dll 
+           version: 2.5.1 
+INF000002: Command line arguments: MCALConfGen.exe -m can -o can_output  
+           U2B24-E.arxml Translation.trxml  
+           ..\X2x\modules\can\generator\U2B24-E\R2211_can_U2B24-E_BSWMDT.arxml  
+           ..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_can.arxml  
+           ..\X2x\common\generic\stubs\22_11\EcuM\xml\EcuM_can.arxml  
+           ..\X2x\common\generic\stubs\22_11\Os\xml\Os_can.arxml 
+           ..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_can.arxml 
+WRN080014: The DemEventParameter configured by parameter  
+           'CAN_E_TIMEOUT_FAILURE' was disabled since the paramter  
+           'Dem/DemConfigSet/DemEventParameter/DemEventReportingType' is 
+           not configured or set to <STANDARD_REPORTING> 
+INF080013: The container 'CanGlobalConfiguration' having short name  
+           <CanGlobalConfiguration_001> should not be configured since  
+           there is no controller configured for hardware unit  
+           <RSCANFD1>. File name: U2B24-E.arxml. Container path: 
+           /ActiveEcuC/Can/CanGlobalConfiguration_001. 
+INF000004: Opened file <can_output\include\Can_Externals.h> at [10 Jul 2026 
+           - 18:49:20]. 
+INF000004: Opened file <can_output\include\Can_Cfg.h> at [10 Jul 2026 - 
+           18:49:20]. 
+INF000004: Opened file <can_output\src\Can_Lcfg.c> at [10 Jul 2026 - 
+           18:49:20]. 
+INF000004: Opened file <can_output\src\Can_PBcfg.c> at [10 Jul 2026 - 
+           18:49:20]. 
+INF000004: Opened file <can_output\Can.log> at [10 Jul 2026 - 18:49:20]. 
+INF000005: <0> Error(s) and <1> Warning(s) detected. 
+INF000007: Execution completed successfully with warnings. 
+

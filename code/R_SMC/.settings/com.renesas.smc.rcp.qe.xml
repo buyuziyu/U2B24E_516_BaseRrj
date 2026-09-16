@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<QE>
+    <Segment id="Project">
+        <Setting id="SrcGeneratedPath" value="src/smc_gen"/>
+    </Segment>
+    <Segment id="Pin">
+        <Setting id="P15_8" value="EXTCLK1O"/>
+        <Setting id="P15_5" value="EXTCLK0O"/>
+        <Setting id="X1" value="X1"/>
+        <Setting id="X2" value="X2"/>
+    </Segment>
+    <Segment id="Device">
+        <Setting id="Series" value="RH850U2x"/>
+        <Setting id="Group" value="RH850U2B24E"/>
+        <Setting id="Board" value="Custom User Board"/>
+        <Setting id="PartNo" value="R7F7025Bx"/>
+        <Setting id="PinCount" value="516"/>
+    </Segment>
+    <Segment id="Component"/>
+</QE>

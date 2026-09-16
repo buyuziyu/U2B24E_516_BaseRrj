@@ -1,0 +1,65 @@
+########################################################################################################################
+# AUTOSAR Renesas R4.8.0 PWM Driver Generation Tool for X2x                   
+# Run time      = [10 Jul 2026 - 18:50:00]
+#    Command line arguments = .\U2B24-E.arxml
+#	..\X2x\modules\pwm\generator\U2B24-E\R2211_pwm_U2B24-E_BSWMDT.arxml
+#	..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_pwm.arxml
+#	..\X2x\common\generic\stubs\22_11\Os\xml\Os_pwm.arxml
+#	..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_pwm.arxml
+#
+# Copyright(c) 2023, 2024 Renesas Electronics Corporation. All rights reserved.
+########################################################################################################################
+
+INF000001: Tool Version: MCALConfGen.exe version: 2.3.0, PwmU2Bx-E.dll 
+           version: 2.5.1 
+INF000002: Command line arguments: MCALConfGen.exe -m pwm -o pwm_output  
+           .\U2B24-E.arxml Translation.trxml  
+           ..\X2x\modules\pwm\generator\U2B24-E\R2211_pwm_U2B24-E_BSWMDT.arxml  
+           ..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_pwm.arxml  
+           ..\X2x\common\generic\stubs\22_11\Os\xml\Os_pwm.arxml 
+           ..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_pwm.arxml 
+WRN121010: The Dem error configured by parameter <PWM_E_REWRITE_FAILED> was  
+           disabled since the paramter <DemEventReportingType> in Dem  
+           module is NOT set to STANDARD_REPORTING. FileName:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml. 
+           Path: /ActiveEcuC/Dem/DemConfigSet/DemEventParameter_001. 
+INF121006: The value of parameter 'PwmEcucPartitionRef' of 'PwmGeneral'  
+           container will be considered as empty string, since the  
+           parameter 'PwmMultiCoreSupport' of 'PwmGeneral' container is  
+           configured as <False>. File Name:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml 
+           Path: /ActiveEcuC/Pwm/PwmGeneral 
+INF121006: The value of parameter 'PwmKernelEcucPartitionRef' of  
+           'PwmGeneral' container will be considered as empty string,  
+           since the parameter 'PwmMultiCoreSupport' of 'PwmGeneral'  
+           container is configured as <False>. File Name:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml 
+           Path: /ActiveEcuC/Pwm/PwmGeneral 
+WRN121004: For all the configured channels, the value of parameter  
+           'PwmNotification' of 'PwmChannel' container should not be  
+           <NULL or NULL_PTR or empty string> since the value of  
+           'PwmNotificationSupported' of 'PwmGeneral' container is  
+           configured as <true>. File Name: 
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml 
+WRN121006: Configured value of parameter 'PWM_E_INT_INCONSISTENT' in  
+           'PwmDemEventParameterRefs' container is ignored, since  
+           parameter 'PwmInterruptConsistencyCheck' in container  
+           'PwmGeneral' is configured as <false>. File Name:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml. 
+           Path: /ActiveEcuC/Pwm/PwmDemEventParameterRefs. 
+WRN121011: The parameter 'PwmGtmChannelInterruptSelect' for container  
+           'PwmChannel_ATOM00' should not be configured when the  
+           parameter 'PwmNotification' is not configured or configured as  
+           <NULL or NULL_PTR or empty string>. File Name:  
+           C:\_WorkSpace\WorkFiles\9_MCAL\3_arxml\AUTOSAR_RH850_U2Bx-E_MCAL_Ver22.00.03\MCAL_RH850U2B24E_516_CodeGen\U2B24-E.arxml 
+           Path: /ActiveEcuC/Pwm/PwmChannelConfigSet/PwmChannel_ATOM00 
+INF000004: Opened file <pwm_output\include\Pwm_Externals.h> at [10 Jul 2026 
+           - 18:50:00]. 
+INF000004: Opened file <pwm_output\include\Pwm_Cfg.h> at [10 Jul 2026 - 
+           18:50:00]. 
+INF000004: Opened file <pwm_output\src\Pwm_PBcfg.c> at [10 Jul 2026 - 
+           18:50:00]. 
+INF000004: Opened file <pwm_output\Pwm.log> at [10 Jul 2026 - 18:50:00]. 
+INF000005: <0> Error(s) and <4> Warning(s) detected. 
+INF000007: Execution completed successfully with warnings. 
+

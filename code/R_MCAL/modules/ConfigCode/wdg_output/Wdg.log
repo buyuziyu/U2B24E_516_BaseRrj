@@ -1,0 +1,61 @@
+########################################################################################################################
+# AUTOSAR Renesas R4.8.0 WDG Driver Generation Tool for X2x                   
+# Run time      = [10 Jul 2026 - 18:50:08]
+#    Command line arguments = .\U2B24-E.arxml
+#	..\X2x\modules\wdg\generator\U2B24-E\R2211_wdg_U2B24-E_BSWMDT.arxml
+#	..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_wdg.arxml
+#	..\X2x\common\generic\stubs\22_11\Os\xml\Os_wdg.arxml
+#	..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_wdg.arxml
+#
+# Copyright(c) 2023, 2024 Renesas Electronics Corporation. All rights reserved.
+########################################################################################################################
+
+INF000001: Tool Version: MCALConfGen.exe version: 2.3.0, WdgU2Bx-E.dll 
+           version: 2.4.1 
+INF000002: Command line arguments: MCALConfGen.exe -m wdg -o wdg_output  
+           .\U2B24-E.arxml Translation.trxml  
+           ..\X2x\modules\wdg\generator\U2B24-E\R2211_wdg_U2B24-E_BSWMDT.arxml  
+           ..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_wdg.arxml  
+           ..\X2x\common\generic\stubs\22_11\Os\xml\Os_wdg.arxml 
+           ..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_wdg.arxml 
+WRN102004: The DemEventParameter configured by parameter  
+           WDG_E_DISABLE_REJECTED was disabled since the paramter  
+           Dem/DemConfigSet/DemEventParameter/DemEventReportingType is 
+           not set to STANDARD_REPORTING. 
+WRN102004: The DemEventParameter configured by parameter WDG_E_MODE_FAILED  
+           was disabled since the paramter  
+           Dem/DemConfigSet/DemEventParameter/DemEventReportingType is 
+           not set to STANDARD_REPORTING. 
+WRN102004: The DemEventParameter configured by parameter  
+           WDG_E_TRIGGER_TIMEOUT was disabled since the paramter  
+           Dem/DemConfigSet/DemEventParameter/DemEventReportingType is 
+           not set to STANDARD_REPORTING. 
+WRN102004: The DemEventParameter configured by parameter  
+           WDG_E_ECM_INT_INCONSISTENT was disabled since the paramter  
+           Dem/DemConfigSet/DemEventParameter/DemEventReportingType is 
+           not set to STANDARD_REPORTING. 
+WRN102004: The DemEventParameter configured by parameter  
+           WDG_E_ILLEGAL_UPDATE_REGISTER was disabled since the paramter  
+           Dem/DemConfigSet/DemEventParameter/DemEventReportingType is 
+           not set to STANDARD_REPORTING. 
+WRN102004: The DemEventParameter configured by parameter  
+           WDG_E_INT_INCONSISTENT was disabled since the paramter  
+           Dem/DemConfigSet/DemEventParameter/DemEventReportingType is 
+           not set to STANDARD_REPORTING. 
+INF102005: Only reference parameter will be used, the immediate value  
+           parameter will be ignored. File name: .\U2B24-E.arxml. Path: 
+           /ActiveEcuC/Wdg/WdgGeneral/WdgWDTBnClockReferencePoint. 
+INF102003: The duration one WDG trigger cycle for interrupt output timing  
+           setting of 'WDTB0' is <64000 usec>. File name: 
+           .\U2B24-E.arxml. Path: /ActiveEcuC/Wdg/WdgUnitConfig. 
+INF102003: The duration one WDG trigger cycle for interrupt output timing  
+           setting of 'WDTB1' is <64000 usec>. File name: 
+           .\U2B24-E.arxml. Path: /ActiveEcuC/Wdg/WdgUnitConfig. 
+INF000004: Opened file <wdg_output\include\Wdg_Cfg.h> at [10 Jul 2026 - 
+           18:50:08]. 
+INF000004: Opened file <wdg_output\src\Wdg_PBcfg.c> at [10 Jul 2026 - 
+           18:50:08]. 
+INF000004: Opened file <wdg_output\Wdg.log> at [10 Jul 2026 - 18:50:08]. 
+INF000005: <0> Error(s) and <6> Warning(s) detected. 
+INF000007: Execution completed successfully with warnings. 
+

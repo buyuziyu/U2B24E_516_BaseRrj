@@ -1,0 +1,122 @@
+; sanity check:
+IF CPUFAMILY()!="V800"
+(
+  DIALOG.OK "Run this script on the RH850 GUI"
+  ENDDO
+)
+
+; initialize and start the debugger
+;WinCLEAR
+RESet
+
+; detect DEBUGPORTTYPE, CPU and FLASH-configuration
+DO ./tools/LauterbachScript/rh850_autosetup.cmm DEBUGPORTTYPE=DEBUG OSCCLOCK=20MHz CORECLOCK=400MHz BAUDRATE=2000kbps PREPAREONLY 
+SYStem.mode down
+CORE.ASSIGN 1 2 3 4 5
+SYStem.mode up
+
+SYStem.Option DUALPORT ON
+SYStem.Option PERSTOP ON
+
+; --------------------------------------------------------------------------------
+; initialize the RAM (For U2A)
+;Data.Set E:0xFDC00000--0xFDC0FFFF %Long 0x00000000    ; Local RAM (CPU0) 
+;Data.Set E:0xFDA00000--0xFDA0FFFF %Long 0x00000000    ; Local RAM (CPU1) 
+;Data.Set E:0xFD800000--0xFD80FFFF %Long 0x00000000    ; Local RAM (CPU2) 
+;Data.Set E:0xFD600000--0xFD60FFFF %Long 0x00000000    ; Local RAM (CPU3) 
+;Data.Set E:0xFE000000--0xFE07FFFF %Long 0x00000000    ; Cluster RAM0
+;Data.Set E:0xFE100000--0xFE17FFFF %Long 0x00000000    ; Cluster RAM1
+;Data.Set E:0xFE400000--0xFE4FFFFF %Long 0x00000000    ; Cluster RAM2_0
+;Data.Set E:0xFE500000--0xFE5FFFFF %Long 0x00000000    ; Cluster RAM2_1
+;Data.Set E:0xFE800000--0xFE81FFFF %Long 0x00000000    ; Cluster RAM3_0
+;Data.Set E:0xFE820000--0xFE83FFFF %Long 0x00000000    ; Cluster RAM3_1
+
+
+; --------------------------------------------------------------------------------
+FLASH.ReProgram ALL
+; load demo application to FLASH
+Data.Load.Elf ./output/U2B24-E_25BNFABC.elf /GHS /ALTBITFIELDS /RelPATH
+FLASH.ReProgram OFF
+
+sYmbol.SourcePATH.SetBaseDir .
+
+;embedded toolbar button definition (...) here
+MENU.ReProgram
+(
+  ADD
+  TOOLBAR
+  ( ; <tooltip> <icon> <command>
+    TOOLITEM "RH850 ReSet" "R,R" 
+    (
+      SYStem.RESetTarget
+    )
+  )
+)
+
+
+; --------------------------------------------------------------------------------
+; open some nice windows
+TOOLBAR   ON
+STATUSBAR ON
+;-------------------------252-------4+65--------------------窗口名---------
+;---------X.x-----Y.Y-----宽度.-----高度.-------------------窗口名---------
+FramePOS  0,      0,      ,         ,                       Maximized
+WinPAGE.RESet
+WinPAGE.Create P000
+WinCLEAR
+
+;---------X.x-----Y.Y-----宽度.-----高度.-------------------窗口名---------
+;PC 代码窗口 
+WinPOS    0.0     0.0     160.      42.     13.     1.      W000
+WinTABS   16.     10.     25.
+List
+
+;---------X.x-----Y.Y-----宽度.-----高度. ----------------------------
+;系统寄存器窗口
+WinPOS    163.0   0.0     62.       22.     0.      0.      W004
+Register
+
+;---------X.x-----Y.Y-----宽度.-----高度. ----------------------------
+;多核选择
+WinPOS    225.0   0.0     27.       5.      0.      1.      W005
+WinTABS   20.     250.
+CORE.List
+
+;---------X.x-----Y.Y-----宽度.-----高度. ----------------------------
+;外设寄存器窗口
+WinPOS    163.0   25.0    89.       40.     0.      0.      W006
+PER
+
+;---------X.x-----Y.Y-----宽度.-----高度. ----------------------------
+;Watch窗口
+WinPOS    0.0     47.0    160.      16.     0.      0.      W003
+Var.Watch
+
+;---------X.x-----Y.Y-----宽度.-----高度. ----------------------------
+;指定地址显示代码窗口
+;WinPOS   3.75    2.1429  113.      26.     13.     1.      W002
+;WinTABS  16.     10.     25.
+;List P:0x14A76
+;---------X.x-----Y.Y-----宽度.-----高度. ----------------------------
+;WinPOS   171.38  57.286  78.       24.     13.     1.      W007
+;Data.dump (0) /DIALOG
+;---------X.x-----Y.Y-----宽度.-----高度. ----------------------------
+
+;Var.AddWatch float_test0
+;---------X.x-----Y.Y-----宽度.-----高度. ----------------------------
+;断点窗口
+;WinPOS   171.0   9.3571  123.      6.      23.     1.      W001
+;WinTABS  13.     0.      0.        0.      0.      0.      0.      0.      0.      72.
+;Break.List
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+WinPAGE.select P000
+
+
+ENDDO
+ 
+
+; --------------------------------------------------------------------------------
+
+

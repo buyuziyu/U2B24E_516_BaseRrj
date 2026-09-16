@@ -1,0 +1,38 @@
+########################################################################################################################
+# AUTOSAR Renesas R4.8.0 FR Driver Generation Tool for X2x                   
+# Run time      = [07 Jul 2026 - 17:57:01]
+#    Command line arguments = U2B24-E.arxml
+#	..\X2x\modules\fr\generator\U2B24-E\R2211_fr_U2B24-E_BSWMDT.arxml
+#	..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_fr.arxml
+#	..\X2x\common\generic\stubs\22_11\Os\xml\Os_fr.arxml
+#	..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_fr.arxml
+#	..\X2x\common\generic\stubs\22_11\FrIf\xml\FrIf.arxml
+#
+# Copyright(c) 2023, 2024 Renesas Electronics Corporation. All rights reserved.
+########################################################################################################################
+
+INF000001: Tool Version: MCALConfGen.exe version: 2.3.0, FrU2Bx-E.dll 
+           version: 2.3.1 
+INF000002: Command line arguments: MCALConfGen.exe -m fr -o fr_output  
+           U2B24-E.arxml Translation.trxml  
+           ..\X2x\modules\fr\generator\U2B24-E\R2211_fr_U2B24-E_BSWMDT.arxml  
+           ..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_fr.arxml  
+           ..\X2x\common\generic\stubs\22_11\Os\xml\Os_fr.arxml  
+           ..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_fr.arxml 
+           ..\X2x\common\generic\stubs\22_11\FrIf\xml\FrIf.arxml 
+INF081006: If the parameter 'FrEnableInputTxHandler' is configured as true,  
+           the following APIs cannot be accessed: 1.  
+           Fr_59_Renesas_TransmitTxLPdu 2. Fr_59_Renesas_CancelTxLPdu 3.  
+           Fr_59_Renesas_ReconfigLPdu 4. Fr_59_Renesas_PrepareLPdu 5. 
+           Fr_59_Renesas_DisableLPdu 
+INF081007: If the parameter 'FrEnableOutputRxHandler' is configured as  
+           true, the API 'Fr_59_Renesas_ReceiveRxLPdu' cannot be 
+           accessed. 
+ERR081006: Configured communication controller has shorname  
+           "FrController_001" of the FlexRay Driver is not referred in  
+           the FlexRay Interface. File Name: "U2B24-E.arxml" Path: 
+           "/ActiveEcuC/Fr/FrMultipleConfiguration/FrController_001" 
+INF000004: Opened file <fr_output\Fr.log> at [07 Jul 2026 - 17:57:01]. 
+INF000005: <1> Error(s) and <0> Warning(s) detected. 
+INF000009: Execution terminated due to error in the input file. 
+

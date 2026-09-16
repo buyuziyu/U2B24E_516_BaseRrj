@@ -1,0 +1,44 @@
+########################################################################################################################
+# AUTOSAR Renesas R4.8.0 ETH Driver Generation Tool for X2x                   
+# Run time      = [10 Jul 2026 - 18:49:26]
+#    Command line arguments = U2B24-E.arxml
+#	..\X2x\modules\eth\generator\U2B24-E\R2211_eth_U2B24-E_BSWMDT.arxml
+#	..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_eth.arxml
+#	..\X2x\common\generic\stubs\22_11\Os\xml\Os_eth.arxml
+#	..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_eth.arxml
+#
+# Copyright(c) 2023, 2024 Renesas Electronics Corporation. All rights reserved.
+########################################################################################################################
+
+INF000001: Tool Version: MCALConfGen.exe version: 2.3.0, EthU2Bx-E.dll 
+           version: 2.4.1 
+INF000002: Command line arguments: MCALConfGen.exe -m eth -o eth_output  
+           U2B24-E.arxml Translation.trxml  
+           ..\X2x\modules\eth\generator\U2B24-E\R2211_eth_U2B24-E_BSWMDT.arxml  
+           ..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_eth.arxml  
+           ..\X2x\common\generic\stubs\22_11\Os\xml\Os_eth.arxml 
+           ..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_eth.arxml 
+WRN088005: The DEM event configured by parameter 'ETH_E_ACCESS' is disabled  
+           since the parameter  
+           Dem/DemConfigSet/DemEventParameter/DemEventReportingType is 
+           not set to STANDARD_REPORTING. 
+WRN088005: The DEM event configured by parameter 'ETH_E_ALIGNMENT' is  
+           disabled since the parameter  
+           Dem/DemConfigSet/DemEventParameter/DemEventReportingType is 
+           not set to STANDARD_REPORTING. 
+WRN088005: The DEM event configured by parameter 'ETH_E_CRC' is disabled  
+           since the parameter  
+           Dem/DemConfigSet/DemEventParameter/DemEventReportingType is 
+           not set to STANDARD_REPORTING. 
+WRN088005: The DEM event configured by parameter 'ETH_E_INT_INCONSISTENT'  
+           is disabled since the parameter  
+           Dem/DemConfigSet/DemEventParameter/DemEventReportingType is 
+           not set to STANDARD_REPORTING. 
+INF000004: Opened file <eth_output\include\Eth_Cfg.h> at [10 Jul 2026 - 
+           18:49:26]. 
+INF000004: Opened file <eth_output\src\Eth_PBcfg.c> at [10 Jul 2026 - 
+           18:49:26]. 
+INF000004: Opened file <eth_output\Eth.log> at [10 Jul 2026 - 18:49:26]. 
+INF000005: <0> Error(s) and <4> Warning(s) detected. 
+INF000007: Execution completed successfully with warnings. 
+

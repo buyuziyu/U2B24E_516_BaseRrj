@@ -1,0 +1,113 @@
+########################################################################################################################
+# AUTOSAR Renesas R4.8.0 ADC Driver Generation Tool for X2x                   
+# Run time      = [10 Jul 2026 - 18:49:17]
+#    Command line arguments = U2B24-E.arxml
+#	..\X2x\modules\adc\generator\U2B24-E\R2211_adc_U2B24-E_BSWMDT.arxml
+#	..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_adc.arxml
+#	..\X2x\common\generic\stubs\22_11\Os\xml\Os_adc.arxml
+#	..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_adc.arxml
+#
+# Copyright(c) 2023, 2024 Renesas Electronics Corporation. All rights reserved.
+########################################################################################################################
+
+INF000001: Tool Version: MCALConfGen.exe version: 2.3.0, AdcU2Bx-E.dll 
+           version: 2.5.1 
+INF000002: Command line arguments: MCALConfGen.exe -m adc -o adc_output  
+           U2B24-E.arxml Translation.trxml  
+           ..\X2x\modules\adc\generator\U2B24-E\R2211_adc_U2B24-E_BSWMDT.arxml  
+           ..\X2x\common\generic\stubs\22_11\Dem\xml\Dem_adc.arxml  
+           ..\X2x\common\generic\stubs\22_11\Os\xml\Os_adc.arxml 
+           ..\X2x\common\generic\stubs\22_11\EcuC\xml\EcuC_adc.arxml 
+WRN123021: The Dem Error configured by parameter "ADC_E_TIMEOUT" in  
+           container "AdcDemEventParameterRefs" was disabled since the  
+           parameter  
+           "/AUTOSAR/EcucDefs/Dem/DemConfigSet/DemEventParameter/DemEventReportingType" 
+           is not set to <STANDARD_REPORTING>. File name: U2B24-E.arxml. 
+WRN123006: Value of the parameter 'AdcNotification' of 'AdcGroup' container  
+           should be configured with a value other than <NULL or  
+           NULL_PTR> for at least one group, since value of the parameter  
+           'AdcGrpNotifCapability' of 'AdcGeneral' container having  
+           ShortName "AdcGeneral" is configured as <true>. File name: 
+           U2B24-E.arxml. 
+WRN123017: Value of the parameter 'AdcErrorNotificationScanGroup' of  
+           'AdcHwUnit' container should be configured with a value other  
+           than <NULL or NULL_PTR or empty string> for at least one  
+           'AdcHwUnit', since parameter 'AdcEnableTriggerOverlapErr' of  
+           'AdcGeneral' container having ShortName "AdcGeneral" is 
+           configured as <true>. File name: U2B24-E.arxml. 
+INF123001: The 'AdcGroup' container having ShortName "AdcGroup_000" is  
+           mapped to <ADC0_SG1> unit. File name: U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_00/AdcGroup_000. 
+INF123001: The 'AdcGroup' container having ShortName "AdcGroup_001" is  
+           mapped to <ADC0_SG4> unit. File name: U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_00/AdcGroup_001. 
+INF123001: The 'AdcGroup' container having ShortName "AdcGroup_002" is  
+           mapped to <ADC0_SG4> unit. File name: U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_00/AdcGroup_002. 
+INF123001: The 'AdcGroup' container having ShortName "AdcGroup_003" is  
+           mapped to <ADC0_SG1> unit. File name: U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_00/AdcGroup_003. 
+INF123001: The 'AdcGroup' container having ShortName "AdcGroup_100" is  
+           mapped to <ADC1_SG1> unit. File name: U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_01/AdcGroup_100. 
+INF123001: The 'AdcGroup' container having ShortName "AdcGroup_101" is  
+           mapped to <ADC1_SG4> unit. File name: U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_01/AdcGroup_101. 
+INF123001: The 'AdcGroup' container having ShortName "AdcGroup_102" is  
+           mapped to <ADC1_SG1> unit. File name: U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_01/AdcGroup_102. 
+INF123001: The 'AdcGroup' container having ShortName "AdcGroup_103" is  
+           mapped to <ADC1_SG4> unit. File name: U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_01/AdcGroup_103. 
+INF123009: The value of both parameters 'AdcChannelHighLimit' and  
+           'AdcChannelLowLimit' of 'AdcChannel' container having  
+           ShortName "AdcChannel_000" configured as <ZERO>. File name:  
+           U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_00/AdcChannel_000. 
+INF123009: The value of both parameters 'AdcChannelHighLimit' and  
+           'AdcChannelLowLimit' of 'AdcChannel' container having  
+           ShortName "AdcChannel_001" configured as <ZERO>. File name:  
+           U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_00/AdcChannel_001. 
+INF123009: The value of both parameters 'AdcChannelHighLimit' and  
+           'AdcChannelLowLimit' of 'AdcChannel' container having  
+           ShortName "AdcChannel_002" configured as <ZERO>. File name:  
+           U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_00/AdcChannel_002. 
+INF123009: The value of both parameters 'AdcChannelHighLimit' and  
+           'AdcChannelLowLimit' of 'AdcChannel' container having  
+           ShortName "AdcChannel_003" configured as <ZERO>. File name:  
+           U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_00/AdcChannel_003. 
+INF123009: The value of both parameters 'AdcChannelHighLimit' and  
+           'AdcChannelLowLimit' of 'AdcChannel' container having  
+           ShortName "AdcChannel_004" configured as <ZERO>. File name:  
+           U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_01/AdcChannel_004. 
+INF123009: The value of both parameters 'AdcChannelHighLimit' and  
+           'AdcChannelLowLimit' of 'AdcChannel' container having  
+           ShortName "AdcChannel_005" configured as <ZERO>. File name:  
+           U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_01/AdcChannel_005. 
+INF123009: The value of both parameters 'AdcChannelHighLimit' and  
+           'AdcChannelLowLimit' of 'AdcChannel' container having  
+           ShortName "AdcChannel_006" configured as <ZERO>. File name:  
+           U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_01/AdcChannel_006. 
+INF123009: The value of both parameters 'AdcChannelHighLimit' and  
+           'AdcChannelLowLimit' of 'AdcChannel' container having  
+           ShortName "AdcChannel_007" configured as <ZERO>. File name:  
+           U2B24-E.arxml. Path: 
+           /ActiveEcuC/Adc/AdcConfigSet_000/AdcHwUnit_01/AdcChannel_007. 
+INF123010: ADC driver will use DMA Descriptor memory from <0xFFF94000> to 
+           <0xFFF9407F> of sDMAC0. File name: U2B24-E.arxml. 
+INF000004: Opened file <adc_output\include\Adc_Cbk.h> at [10 Jul 2026 - 
+           18:49:17]. 
+INF000004: Opened file <adc_output\include\Adc_Cfg.h> at [10 Jul 2026 - 
+           18:49:17]. 
+INF000004: Opened file <adc_output\src\Adc_PBcfg.c> at [10 Jul 2026 - 
+           18:49:17]. 
+INF000004: Opened file <adc_output\Adc.log> at [10 Jul 2026 - 18:49:17]. 
+INF000005: <0> Error(s) and <3> Warning(s) detected. 
+INF000007: Execution completed successfully with warnings. 
+
